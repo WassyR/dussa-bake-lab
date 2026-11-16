@@ -182,6 +182,7 @@ await check('the choice survives a reload', async () =>
 await page.getByRole('switch').first().click()
 await page.waitForTimeout(700)
 
+failures += errors.length
 console.log(errors.length ? `\nPAGE ERRORS:\n${[...new Set(errors)].join('\n')}` : '\nno page errors')
 console.log(failures === 0 ? 'All E2E checks passed.' : `${failures} check(s) failed.`)
 

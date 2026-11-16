@@ -26,11 +26,7 @@ export default function Creations() {
   const [sort, setSort] = useState('featured')
   const [showFilters, setShowFilters] = useState(false)
 
-  usePageMeta({
-    title: 'Menu — Cakes, Cupcakes, Cookies & Custom Orders | Dussa BakeLab',
-    description:
-      'Browse cakes, cupcakes, cookies, brownies and custom cakes from Dussa BakeLab. Made to order in Kigali.',
-  })
+  usePageMeta()
 
   /** Keep the URL shareable — filters live in the query string, not just state. */
   const setParam = (key, value) => {

@@ -1,8 +1,9 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { FULFILMENT } from '../data/site'
 
 const CART_KEY = 'dussa.cart.v1'
 const CartContext = createContext(null)
+const useBrowserLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect
 
 function readCart() {
   try {
@@ -35,18 +36,25 @@ function sameConfiguration(a, b) {
 }
 
 export function CartProvider({ children }) {
-  const [items, setItems] = useState(readCart)
+  const [items, setItems] = useState([])
+  const [restored, setRestored] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   /** Bumped on every add so the nav badge can pulse. */
   const [lastAdded, setLastAdded] = useState(null)
 
+  useBrowserLayoutEffect(() => {
+    setItems(readCart())
+    setRestored(true)
+  }, [])
+
   useEffect(() => {
+    if (!restored) return
     try {
       localStorage.setItem(CART_KEY, JSON.stringify(items))
     } catch {
       /* private mode — the cart simply won't survive a refresh */
     }
-  }, [items])
+  }, [items, restored])
 
   const addItem = useCallback((item) => {
     setItems((current) => {

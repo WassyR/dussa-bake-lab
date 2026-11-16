@@ -76,11 +76,7 @@ export default function Contact() {
   });
   const [errors, setErrors] = useState({});
 
-  usePageMeta({
-    title: "Contact Dussa BakeLab — Kigali, Rwanda",
-    description:
-      "Talk to Dussa BakeLab about cakes, custom designs and delivery across Kigali. WhatsApp 0788 722 064, call us, or send an enquiry.",
-  });
+  usePageMeta()
 
   const update = (key, value) => {
     setForm((f) => ({ ...f, [key]: value }));

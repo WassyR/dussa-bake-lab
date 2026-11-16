@@ -1,13 +1,19 @@
 import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
+import { createRoot, hydrateRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import './index.css'
 import App from './App.jsx'
 
-createRoot(document.getElementById('root')).render(
+const root = document.getElementById('root')
+const snapshot = document.getElementById('dussa-initial-catalog')
+const initialCatalog = snapshot ? JSON.parse(snapshot.textContent) : undefined
+const app = (
   <StrictMode>
     <BrowserRouter>
-      <App />
+      <App initialCatalog={initialCatalog} />
     </BrowserRouter>
-  </StrictMode>,
+  </StrictMode>
 )
+
+if (root.dataset.prerendered === 'true') hydrateRoot(root, app)
+else createRoot(root).render(app)

@@ -1,37 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import { PRODUCTS, CATEGORIES, OCCASIONS } from '../data/catalog'
-import { BRAND, BRAND_ASSETS, CONTACT, FULFILMENT, HOURS } from '../data/site'
+import { CATEGORIES, OCCASIONS } from '../data/catalog'
+import { BRAND_ASSETS } from '../data/site'
+import { DEFAULT_CATALOG } from '../data/siteCatalog'
 
 const CatalogContext = createContext(null)
-
-/** The menu and settings bundled with the build, used until the API answers. */
-const FALLBACK = {
-  products: PRODUCTS,
-  settings: {
-    brand: {
-      name: BRAND.name,
-      tagline: BRAND.tagline,
-      script: BRAND.script,
-      description: BRAND.description,
-      city: BRAND.city,
-      country: BRAND.country,
-      founded: BRAND.founded,
-      logoUrl: BRAND.logoUrl,
-      logoHasName: BRAND.logoHasName,
-    },
-    contact: { ...CONTACT },
-    hours: HOURS,
-    fulfilment: {
-      leadDays: { ...FULFILMENT.leadDays },
-      deliveryFee: FULFILMENT.deliveryFee,
-      freeDeliveryOver: FULFILMENT.freeDeliveryOver,
-      depositPercent: FULFILMENT.depositPercent,
-      deliveryZones: [...FULFILMENT.deliveryZones],
-      payments: [...FULFILMENT.payments],
-    },
-    gallery: [],
-  },
-}
 
 /**
  * Serves the live menu from /api/catalog, falling back to the menu bundled in
@@ -39,9 +11,9 @@ const FALLBACK = {
  * and keeps working if the API is unavailable — the bakery's edits simply
  * replace the defaults once they load.
  */
-export function CatalogProvider({ children }) {
-  const [products, setProducts] = useState(FALLBACK.products)
-  const [settings, setSettings] = useState(FALLBACK.settings)
+export function CatalogProvider({ children, initialCatalog = DEFAULT_CATALOG }) {
+  const [products, setProducts] = useState(initialCatalog.products)
+  const [settings, setSettings] = useState(initialCatalog.settings)
   const [live, setLive] = useState(false)
   const [loading, setLoading] = useState(true)
 

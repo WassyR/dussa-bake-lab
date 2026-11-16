@@ -12,11 +12,7 @@ import { MARQUEE_WORDS } from '../data/content'
 import usePageMeta from '../lib/usePageMeta'
 
 export default function Home() {
-  usePageMeta({
-    title: 'Dussa BakeLab — Cakes & Treats in Kigali',
-    description:
-      'Order cakes, cupcakes and sweet treats from Dussa BakeLab in Kigali. Choose your favourites or ask about a custom cake.',
-  })
+  usePageMeta()
 
   return (
     <>

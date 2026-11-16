@@ -1,7 +1,8 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 
 const STORAGE_KEY = 'dussa.theme.v1'
 const ThemeContext = createContext(null)
+const useBrowserLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect
 
 export const THEMES = [
   { id: 'bright', label: 'Bright', hint: 'Warm ivory and cream' },
@@ -23,19 +24,27 @@ function readStored() {
  * index.css do the rest, and it is remembered between visits.
  */
 export function ThemeProvider({ children }) {
-  const [theme, setThemeState] = useState(readStored)
+  const [theme, setThemeState] = useState('bright')
+  const [restored, setRestored] = useState(false)
+
+  // Match the pre-rendered HTML, then restore preferences before client paint.
+  useBrowserLayoutEffect(() => {
+    setThemeState(readStored())
+    setRestored(true)
+  }, [])
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
     // Keeps the browser chrome on mobile in step with the page.
     const meta = document.querySelector('meta[name="theme-color"]')
     if (meta) meta.setAttribute('content', theme === 'bright' ? '#FDF4E9' : '#2A1810')
+    if (!restored) return
     try {
       localStorage.setItem(STORAGE_KEY, theme)
     } catch {
       /* private mode: the theme just will not persist */
     }
-  }, [theme])
+  }, [theme, restored])
 
   const setTheme = useCallback((next) => setThemeState(next), [])
   const toggle = useCallback(

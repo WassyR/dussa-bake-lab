@@ -31,6 +31,7 @@ for (const file of ['.env.local', '.env']) {
 }
 
 const routes = [
+  { pattern: /^\/api\/page$/, module: '../api/page.js', params: [] },
   { pattern: /^\/api\/orders\/([^/]+)$/, module: '../api/orders/[code].js', params: ['code'] },
   { pattern: /^\/api\/orders$/, module: '../api/orders.js', params: [] },
   { pattern: /^\/api\/catalog\/([^/]+)$/, module: '../api/catalog/[slug].js', params: ['slug'] },

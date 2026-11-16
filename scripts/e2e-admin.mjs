@@ -247,6 +247,7 @@ await check('the overview shows the day lists', async () =>
 )
 await shot('admin-6-overview')
 
+failures += errors.length
 console.log(errors.length ? `\nPAGE ERRORS:\n${[...new Set(errors)].join('\n')}` : '\nno page errors')
 console.log(failures === 0 ? 'All admin checks passed.' : `${failures} check(s) failed.`)
 

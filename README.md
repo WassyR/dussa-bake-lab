@@ -87,10 +87,14 @@ Other scripts:
 npm run build        # production build into dist/
 npm run preview      # serve the production build
 npm run lint         # oxlint
+npm run test:seo     # metadata, crawlable HTML, sitemap and public page responses
 npm run test:api     # orders, catalogue, settings, photos, WhatsApp (80 checks)
 npm run test:e2e     # browser walk-through of ordering (13 checks)
 npm run test:admin   # browser walk-through of the dashboard (21 checks)
 ```
+
+See [Search visibility](docs/seo.md) for the pre-rendered pages, catalogue updates,
+Google Search Console submission and Google Business Profile setup.
 
 `npm run dev` serves the front end only. To get the API as well, run both:
 

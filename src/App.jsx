@@ -37,7 +37,7 @@ function PageLoader() {
 function AnimatedRoutes() {
   const location = useLocation()
   return (
-    <AnimatePresence mode="wait">
+    <AnimatePresence mode="wait" initial={false}>
       <motion.main
         key={location.pathname}
         initial={{ opacity: 0 }}
@@ -65,10 +65,10 @@ function AnimatedRoutes() {
   )
 }
 
-export default function App() {
+export default function App({ initialCatalog } = {}) {
   return (
     <ThemeProvider>
-      <CatalogProvider>
+      <CatalogProvider initialCatalog={initialCatalog}>
       <CartProvider>
       <ScrollToTop />
       <a

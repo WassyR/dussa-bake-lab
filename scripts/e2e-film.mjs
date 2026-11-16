@@ -42,6 +42,7 @@ const STILL = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000"><
 <ellipse cx="1000" cy="380" rx="330" ry="90" fill="#f3e2c8"/></svg>`
 const serveStill = (route) => route.fulfill({ status: 200, contentType: 'image/svg+xml', body: STILL })
 
+const BASE = process.env.BASE_URL || 'http://127.0.0.1:5173'
 const OUT = process.env.SHOT_DIR
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH })
 let failures = 0
@@ -104,7 +105,7 @@ for (const [label, viewport, stallOnce] of [
     route.fulfill({ contentType: 'text/html', body: player }),
   )
   await page.route('https://images.unsplash.com/**', serveStill)
-  await page.goto('http://127.0.0.1:5173/', { waitUntil: 'domcontentloaded' })
+  await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' })
   await page.waitForSelector('iframe.is-showing:not(.is-tappable)', { timeout: 6000 })
   const frame = await (await page.$('iframe.hero-film-frame')).contentFrame()
   const starts = await frame.evaluate(() => window.__starts)
@@ -120,7 +121,7 @@ for (const [label, viewport, stallOnce] of [
     route.fulfill({ contentType: 'text/html', body: FAKE_PLAYER }),
   )
   await page.route('https://images.unsplash.com/**', serveStill)
-  await page.goto('http://127.0.0.1:5173/', { waitUntil: 'domcontentloaded' })
+  await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' })
   await page.getByRole('button', { name: 'Play the background film' }).waitFor()
   check('reduced motion: no video loads before it is requested', await page.locator('iframe').count() === 0)
   await page.getByRole('button', { name: 'Play the background film' }).press('Space')
@@ -140,7 +141,7 @@ for (const [label, viewport] of [
     route.fulfill({ status: 200, contentType: 'text/html', body: FAKE_PLAYER }),
   )
   await page.route('https://images.unsplash.com/**', serveStill)
-  await page.goto('http://127.0.0.1:5173/', { waitUntil: 'domcontentloaded' })
+  await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' })
 
   // Before PLAYING is reported the film must be invisible: no black player flash.
   await page.waitForSelector('iframe.hero-film-frame', { state: 'attached', timeout: 8000 })
@@ -234,7 +235,7 @@ for (const [label, viewport] of [
     route.fulfill({ status: 200, contentType: 'text/html', body: FAKE_PLAYER })
   })
   await page.route('https://images.unsplash.com/**', serveStill)
-  await page.goto('http://127.0.0.1:5173/', { waitUntil: 'domcontentloaded' })
+  await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' })
   await page.waitForTimeout(4500)
 
   check('phone: the film starts by itself', playerRequested === true)
@@ -295,7 +296,7 @@ for (const [label, viewport] of [
     route.fulfill({ status: 200, contentType: 'text/html', body: FAKE_PLAYER })
   })
   await page.route('https://images.unsplash.com/**', serveStill)
-  await page.goto('http://127.0.0.1:5173/', { waitUntil: 'domcontentloaded' })
+  await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' })
   await page.waitForTimeout(3500)
   check('save-data: the film still starts by itself', playerRequested === true)
   await page.close()
@@ -312,7 +313,7 @@ for (const [label, viewport] of [
     route.fulfill({ status: 200, contentType: 'text/html', body: refusing }),
   )
   await page.route('https://images.unsplash.com/**', serveStill)
-  await page.goto('http://127.0.0.1:5173/', { waitUntil: 'domcontentloaded' })
+  await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' })
   await page.waitForSelector('iframe.hero-film-frame', { state: 'attached', timeout: 8000 })
   await page.waitForTimeout(10000)
   const g = await scanForBars(page)
@@ -342,7 +343,7 @@ for (const [label, viewport, mobile] of [
     route.fulfill({ status: 200, contentType: 'text/html', body: refusing }),
   )
   await page.route('https://images.unsplash.com/**', serveStill)
-  await page.goto('http://127.0.0.1:5173/', { waitUntil: 'domcontentloaded' })
+  await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' })
   await page.waitForSelector('iframe.hero-film-frame', { state: 'attached', timeout: 8000 })
   await page.waitForTimeout(3000)
   const before = await scanForBars(page)
@@ -424,7 +425,7 @@ for (const [label, viewport, mobile] of [
       route.fulfill({ status: 200, contentType: 'text/html', body }),
     )
     await page.route('https://images.unsplash.com/**', serveStill)
-    await page.goto('http://127.0.0.1:5173/', { waitUntil: 'domcontentloaded' })
+    await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' })
     await page.waitForSelector('iframe.hero-film-frame', { state: 'attached', timeout: 8000 })
     const frameHandle = await page.$('iframe.hero-film-frame')
     const frame = await frameHandle.contentFrame()

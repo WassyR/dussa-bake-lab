@@ -40,11 +40,7 @@ const TIMELINE = [
 ]
 
 export default function About() {
-  usePageMeta({
-    title: 'Our story — Dussa BakeLab, Kigali',
-    description:
-      'Get to know Dussa BakeLab, a Kigali bakery making cakes, cupcakes and treats for every kind of occasion.',
-  })
+  usePageMeta()
 
   return (
     <>

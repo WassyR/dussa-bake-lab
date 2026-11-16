@@ -35,10 +35,7 @@ export default function ProductDetail() {
   const [tab, setTab] = useState('about')
   const [added, setAdded] = useState(false)
 
-  usePageMeta({
-    title: product ? `${product.name} — Dussa BakeLab` : 'Creation not found — Dussa BakeLab',
-    description: product?.description,
-  })
+  usePageMeta({ product, unresolved: loading && !product })
 
   const size = product?.sizes.find((s) => s.id === sizeId) || product?.sizes[0]
   const flavor = product?.flavors?.find((f) => f.id === flavorId)
