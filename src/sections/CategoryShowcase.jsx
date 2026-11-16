@@ -7,7 +7,8 @@ import { useCatalog } from '../context/CatalogContext'
 
 /** The flyer's "Our delicious creations" strip, rebuilt as an interactive rail. */
 export default function CategoryShowcase() {
-  const { categories } = useCatalog()
+  const { categories, products } = useCatalog()
+  const categoryPhoto = category => category.photo || products.find(p => p.category === category.id && p.photo)?.photo
 
   return (
     <Section id="creations" className="relative overflow-hidden bg-cream">
@@ -16,7 +17,7 @@ export default function CategoryShowcase() {
           align="center"
           eyebrow="Something for everyone"
           title="What we make"
-          lead="Browse our cakes, cupcakes, cookies and treats. Choose a favourite or ask us about a custom order."
+          lead="Cookies, classic and decorated cupcakes, cake loaflets, birthday cakes and custom wedding cakes. Choose a favourite or tell us what you are planning."
         />
         <Flourish className="mt-8" />
 
@@ -40,11 +41,11 @@ export default function CategoryShowcase() {
 
                 <div className="relative mx-auto w-full max-w-[11rem] transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-110 group-hover:-rotate-2">
                   <CreationImage
-                    photo={category.photo}
+                    photo={categoryPhoto(category)}
                     art={category.art}
                     flavorArt={category.flavorArt}
                     seed={`cat-${category.id}`}
-                    alt={`An example of ${category.name.toLowerCase()}`}
+                    alt={`${categoryPhoto(category) ? '' : 'An example of '}${category.name.toLowerCase()}`}
                     className="w-full rounded-2xl"
                   />
                 </div>
@@ -69,6 +70,7 @@ export default function CategoryShowcase() {
             </motion.div>
           ))}
         </div>
+        {categories.some(category => !categoryPhoto(category)) && <p className="mt-7 text-center text-[0.78rem] text-cocoa/65">Example photos for inspiration. Ask us for photos of our current work.</p>}
       </div>
     </Section>
   )

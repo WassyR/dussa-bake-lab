@@ -3,6 +3,7 @@ import { seedIfEmpty, defaultSettings, SETTINGS_KEY } from './_lib/seed.js'
 import { getSetting } from './_lib/db.js'
 import { sanitiseProduct } from './_lib/product.js'
 import { applyCors, adminConfigured, isAdmin, readBody, sendJson } from './_lib/http.js'
+import { MENU_VERSION } from '../src/data/catalog.js'
 
 export default async function handler(req, res) {
   if (applyCors(req, res)) return
@@ -22,6 +23,7 @@ export default async function handler(req, res) {
 
       return sendJson(res, 200, {
         products,
+        menuVersion: MENU_VERSION,
         settings: settings || defaultSettings(),
         storage: storageMode(),
         secured: adminConfigured(),

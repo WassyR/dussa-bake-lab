@@ -1,8 +1,9 @@
-import { PRODUCTS } from '../../src/data/catalog.js'
+import { PRODUCTS, MENU_VERSION, RETIRED_SAMPLE_SLUGS } from '../../src/data/catalog.js'
 import { BRAND, CONTACT, FULFILMENT, HOURS } from '../../src/data/site.js'
-import { countProducts, getSetting, saveProduct, saveSetting } from './db.js'
+import { getProduct, getSetting, saveProduct, saveSetting } from './db.js'
 
 export const SETTINGS_KEY = 'business'
+export const MENU_VERSION_KEY = 'menu-version'
 
 /** The shape the site and the admin settings form both read. */
 export function defaultSettings() {
@@ -32,18 +33,27 @@ export function defaultSettings() {
 }
 
 /**
- * First run on an empty database: copy the menu shipped in the repo into
- * Postgres so the bakery has something to edit rather than a blank screen.
- * Safe to call on every request — it exits immediately once rows exist.
+ * Apply the owner-confirmed menu once. Archive the old sample rows, preserve
+ * unrelated products, and leave later dashboard edits/deletions intact.
  */
 export async function seedIfEmpty() {
-  const seeded = { products: 0, settings: false }
+  const seeded = { products: 0, archived: 0, settings: false }
 
-  if ((await countProducts()) === 0) {
-    for (let i = 0; i < PRODUCTS.length; i += 1) {
-      await saveProduct({ ...PRODUCTS[i], position: i * 10, active: true })
-      seeded.products += 1
+  if ((await getSetting(MENU_VERSION_KEY)) !== MENU_VERSION) {
+    for (const slug of RETIRED_SAMPLE_SLUGS) {
+      const old = await getProduct(slug)
+      if (old && old.active !== false) {
+        await saveProduct({ ...old, active: false })
+        seeded.archived += 1
+      }
     }
+    for (let i = 0; i < PRODUCTS.length; i += 1) {
+      if (!(await getProduct(PRODUCTS[i].slug))) {
+        await saveProduct({ ...PRODUCTS[i], position: i * 10, active: true })
+        seeded.products += 1
+      }
+    }
+    await saveSetting(MENU_VERSION_KEY, MENU_VERSION)
   }
 
   if (!(await getSetting(SETTINGS_KEY))) {

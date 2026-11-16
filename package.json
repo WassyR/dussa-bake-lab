@@ -13,7 +13,8 @@
     "test:admin": "node scripts/e2e-admin.mjs",
     "preview": "vite preview",
     "test:film": "node scripts/e2e-film.mjs",
-    "test:seo": "node --test scripts/test-seo.mjs"
+    "test:seo": "node --test scripts/test-seo.mjs",
+    "test:menu": "node --test scripts/test-menu.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.8",

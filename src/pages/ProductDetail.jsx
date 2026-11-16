@@ -4,9 +4,10 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { Check, ChevronRight, Clock, Minus, Plus, ShoppingBag, Sparkles, Truck } from 'lucide-react'
 import CreationImage from '../components/CreationImage'
 import ProductCard from '../components/ProductCard'
+import CakeQuote from '../components/CakeQuote'
 import { Button, Flourish, Pill, Stars } from '../components/ui'
 import { PALETTES } from '../art/palettes'
-import { computeLinePrice, getCategory } from '../data/catalog'
+import { computeLinePrice, getCategory, isQuoteProduct } from '../data/catalog'
 import { useCatalog } from '../context/CatalogContext'
 import { useCart } from '../context/CartContext'
 import { classNames, money } from '../lib/format'
@@ -54,6 +55,7 @@ export default function ProductDetail() {
   if (!product) return loading ? <ProductSkeleton /> : <NotFound />
 
   const category = getCategory(product.category)
+  const quoteOnly = isQuoteProduct(product)
   /** The selected flavour repaints the illustration, so the choice is visible. */
   const artFlavor = PALETTES[flavorId] ? flavorId : product.flavorArt
   const related = products.filter(
@@ -66,6 +68,7 @@ export default function ProductDetail() {
     )
 
   const handleAdd = () => {
+    if (quoteOnly || !size) return
     addItem({
       slug: product.slug,
       name: product.name,
@@ -166,22 +169,22 @@ export default function ProductDetail() {
             </motion.div>
             {!product.photo && (
               <p className="mt-3 text-center text-[0.78rem] text-cocoa/72">
-                Example photo for inspiration. Your cake will be made to your order.
+                Example photo for inspiration. Ask us for photos of our current work.
               </p>
             )}
 
             <div className="mt-4 grid grid-cols-3 gap-3">
               <div className="rounded-2xl border border-caramel/20 bg-porcelain p-4 text-center">
                 <Clock size={16} strokeWidth={1.7} className="mx-auto text-caramel" />
-                <p className="mt-2 text-[0.72rem] uppercase tracking-[0.1em] text-cocoa/70">Lead time</p>
+                <p className="mt-2 text-[0.72rem] uppercase tracking-[0.1em] text-cocoa/70">{quoteOnly ? 'Date' : 'Lead time'}</p>
                 <p className="mt-0.5 text-[0.9rem] font-medium text-espresso">
-                  {product.leadDays} {product.leadDays === 1 ? 'day' : 'days'}
+                  {quoteOnly ? 'Confirm with us' : `${product.leadDays} ${product.leadDays === 1 ? 'day' : 'days'}`}
                 </p>
               </div>
               <div className="rounded-2xl border border-caramel/20 bg-porcelain p-4 text-center">
                 <Sparkles size={16} strokeWidth={1.7} className="mx-auto text-caramel" />
-                <p className="mt-2 text-[0.72rem] uppercase tracking-[0.1em] text-cocoa/70">Serves</p>
-                <p className="mt-0.5 text-[0.9rem] font-medium text-espresso">{size.serves}</p>
+                <p className="mt-2 text-[0.72rem] uppercase tracking-[0.1em] text-cocoa/70">{quoteOnly ? 'Size' : 'Pack'}</p>
+                <p className="mt-0.5 text-[0.9rem] font-medium text-espresso">{size?.serves || 'To discuss'}</p>
               </div>
               <div className="rounded-2xl border border-caramel/20 bg-porcelain p-4 text-center">
                 <Truck size={16} strokeWidth={1.7} className="mx-auto text-caramel" />
@@ -218,9 +221,10 @@ export default function ProductDetail() {
               ))}
             </div>
 
+            {quoteOnly ? <CakeQuote product={product} /> : <>
             {/* ---------------------------------------------- size */}
             <fieldset className="mt-9">
-              <legend className="eyebrow text-cocoa/72">Choose a size</legend>
+              <legend className="eyebrow text-cocoa/72">Choose your pieces</legend>
               <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
                 {product.sizes.map((s) => (
                   <button
@@ -395,7 +399,7 @@ export default function ProductDetail() {
                   className="mt-3 w-full rounded-xl border border-caramel/25 bg-porcelain p-4 text-[0.9rem] leading-relaxed text-espresso placeholder:text-cocoa/65 focus:border-caramel focus:outline-none"
                 />
                 <p className="mt-2 text-[0.78rem] text-cocoa/72">
-                  We will reply with a sketch and a firm quote before anything is baked.
+                  Contact us to confirm any design requests before ordering.
                 </p>
               </div>
             )}
@@ -452,6 +456,7 @@ export default function ProductDetail() {
                 {money(fulfilment.freeDeliveryOver)}
               </p>
             </div>
+            </>}
 
             {/* ----------------------------------------------- tabs */}
             <div className="mt-12">
@@ -488,23 +493,21 @@ export default function ProductDetail() {
                       Ingredients vary depending on your choice of flavour, filling and decorations. Ask us for the full ingredient details before ordering.
                     </p>
                     <p>
-                      <strong className="font-medium text-espresso">Allergens:</strong> contains
-                      dairy, eggs, gluten and may contain nuts. Our kitchen handles all four, so we
-                      cannot promise an allergen-free environment. Eggless and lower-sugar versions
-                      are available if you ask; add a note at checkout.
+                      <strong className="font-medium text-espresso">Allergens:</strong> recipes and
+                      decorations may contain wheat, eggs, milk and nuts. Contact us before ordering
+                      to discuss ingredients, cross-contact and any dietary requests.
                     </p>
                   </div>
                 )}
                 {tab === 'care' && (
                   <div className="space-y-3">
                     <p>
-                      Keep buttercream and ganache cakes in the fridge, then bring them out 45
-                      minutes before serving. Allow time for them to soften before serving.
+                      Ask us for storage instructions for your order. Keep cream-filled cakes and
+                      cupcakes refrigerated and away from direct sunlight.
                     </p>
                     <p>
-                      Cookies, brownies and macarons keep in a sealed box at room temperature for
-                      three or four days. Wedding tiers arrive assembled and should stay cool and out
-                      of the sun until you cut them.
+                      Keep cookies and unfilled loaflets in a sealed container in a cool, dry place.
+                      We will discuss delivery, setup and storage when planning a wedding cake.
                     </p>
                   </div>
                 )}

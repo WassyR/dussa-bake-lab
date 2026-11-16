@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { FULFILMENT } from '../data/site'
+import { RETIRED_SAMPLE_SLUGS } from '../data/catalog'
 
 const CART_KEY = 'dussa.cart.v1'
 const CartContext = createContext(null)
@@ -9,7 +10,7 @@ function readCart() {
   try {
     const raw = localStorage.getItem(CART_KEY)
     const parsed = raw ? JSON.parse(raw) : []
-    return Array.isArray(parsed) ? parsed : []
+    return Array.isArray(parsed) ? parsed.filter(item => !RETIRED_SAMPLE_SLUGS.includes(item.slug)) : []
   } catch {
     return []
   }

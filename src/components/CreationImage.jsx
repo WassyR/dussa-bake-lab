@@ -16,7 +16,7 @@ export default function CreationImage({
 
   useEffect(() => setStatus('original'), [photo, seed, art, flavorArt])
 
-  if (status === 'missing') return (
+  if (status === 'missing' || !source) return (
     <div role="img" aria-label={alt || 'Bakery photograph unavailable'} className={classNames('flex aspect-square h-full w-full items-center justify-center bg-blush px-5 text-center text-sm text-cocoa/60', className)}>
       Photograph coming soon
     </div>

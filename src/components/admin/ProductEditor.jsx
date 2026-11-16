@@ -27,6 +27,8 @@ const BLANK = {
   tags: [],
   occasions: [],
   sizes: [{ label: '', serves: '', price: 0 }],
+  pricing: 'fixed',
+  startingPrice: '',
   flavors: [],
   frostings: [],
   addons: [],
@@ -84,10 +86,11 @@ export default function ProductEditor({ product, onSave, onClose, saving, error,
   }
 
   const priceRange = useMemo(() => {
+    if (form.pricing === 'quote') return Number(form.startingPrice) > 0 ? { min: Number(form.startingPrice), max: Number(form.startingPrice) } : null
     const prices = (form.sizes || []).map((s) => Number(s.price) || 0).filter((p) => p > 0)
     if (prices.length === 0) return null
     return { min: Math.min(...prices), max: Math.max(...prices) }
-  }, [form.sizes])
+  }, [form.sizes, form.pricing, form.startingPrice])
 
   const toggleOccasion = (id) =>
     set(
@@ -126,11 +129,13 @@ export default function ProductEditor({ product, onSave, onClose, saving, error,
             <div className="mt-2 flex flex-wrap items-center gap-2">
               {priceRange && (
                 <Pill tone="gold">
+                  {form.pricing === 'quote' && 'From '}
                   {priceRange.min === priceRange.max
                     ? money(priceRange.min)
                     : `${money(priceRange.min)} – ${money(priceRange.max)}`}
                 </Pill>
               )}
+              {form.pricing === 'quote' && !priceRange && <Pill tone="gold">Quote on request</Pill>}
               {!form.active && <Pill tone="outline">Hidden from the site</Pill>}
               {form.bestseller && <Pill tone="dark">Bestseller</Pill>}
             </div>
@@ -190,7 +195,7 @@ export default function ProductEditor({ product, onSave, onClose, saving, error,
                       setTouchedSlug(true)
                       set('slug', e.target.value)
                     }}
-                    placeholder="signature-chocolate-drip"
+                    placeholder="classic-cupcakes"
                   />
                 </Field>
 
@@ -273,6 +278,18 @@ export default function ProductEditor({ product, onSave, onClose, saving, error,
 
           {section === 'pricing' && (
             <div className="space-y-7">
+              <Field label="Pricing" htmlFor="product-pricing">
+                <Select id="product-pricing" value={form.pricing || 'fixed'} onChange={e => set('pricing', e.target.value)}>
+                  <option value="fixed">Fixed prices — add to basket</option>
+                  <option value="quote">Custom quote — enquire on WhatsApp</option>
+                </Select>
+              </Field>
+              {form.pricing === 'quote' ? <>
+                <Field label="Starting price (optional, RWF)" htmlFor="starting-price" hint="leave blank for quote only">
+                  <TextInput id="starting-price" type="number" min="0" step="1" value={form.startingPrice ?? ''} onChange={e => set('startingPrice', e.target.value)} placeholder="15000" />
+                </Field>
+                <p className="text-[0.85rem] leading-relaxed text-cocoa/70">Customers request a quote on WhatsApp. The starting price is informational; the size, design, date and final price are confirmed before ordering.</p>
+              </> : <>
               <OptionRows
                 label="Sizes & prices"
                 hint="at least one, in RWF"
@@ -295,11 +312,13 @@ export default function ProductEditor({ product, onSave, onClose, saving, error,
                     : 'Add a size with a price and the product will show a "from" price on every card.'}
                 </p>
               </div>
+              </>}
             </div>
           )}
 
           {section === 'options' && (
             <div className="space-y-8">
+              {form.pricing === 'quote' ? <p className="text-[0.85rem] leading-relaxed text-cocoa/70">Flavours, finishes and decorations are discussed as part of the custom quote. No fixed option charges are offered at checkout.</p> : <>
               <OptionRows
                 label="Flavours"
                 hint="extra charge added to the size price"
@@ -308,7 +327,7 @@ export default function ProductEditor({ product, onSave, onClose, saving, error,
                 addLabel="Add a flavour"
                 emptyNote="No flavour choice — customers order this exactly as described."
                 columns={[
-                  { key: 'label', label: 'Flavour', placeholder: 'Belgian chocolate' },
+                  { key: 'label', label: 'Flavour', placeholder: 'Chocolate' },
                   { key: 'delta', label: 'Extra', type: 'number', placeholder: '0', width: 'w-28' },
                 ]}
               />
@@ -334,11 +353,12 @@ export default function ProductEditor({ product, onSave, onClose, saving, error,
                 addLabel="Add an extra"
                 emptyNote="No optional extras offered."
                 columns={[
-                  { key: 'label', label: 'Extra', placeholder: '24k edible gold leaf' },
-                  { key: 'price', label: 'Price', type: 'number', placeholder: '9000', width: 'w-28' },
+                  { key: 'label', label: 'Extra', placeholder: 'Birthday candles' },
+                  { key: 'price', label: 'Price', type: 'number', placeholder: '2000', width: 'w-28' },
                 ]}
               />
 
+              </>}
               <div className="grid gap-3 sm:grid-cols-2">
                 <Toggle
                   label="Allow a message on the cake"
@@ -363,7 +383,7 @@ export default function ProductEditor({ product, onSave, onClose, saving, error,
                   <div className="flex items-baseline justify-between gap-3">
                     <span className="text-[0.8125rem] font-medium text-cocoa">Photo</span>
                     <span className="text-[0.72rem] text-cocoa/45">
-                      leave empty to use the drawing
+                      leave empty until you have a photo
                     </span>
                   </div>
                   <div className="mt-2">
@@ -375,8 +395,8 @@ export default function ProductEditor({ product, onSave, onClose, saving, error,
                     />
                   </div>
                   <p className="mt-2.5 text-[0.75rem] leading-relaxed text-cocoa/55">
-                    If a photo ever fails to load, the drawing comes back on its own, so customers
-                    never see a broken picture.
+                    An example photo or a “Photograph coming soon” placeholder is shown if no
+                    bakery photo is available. Upload a photo of the actual product here.
                   </p>
                 </div>
 

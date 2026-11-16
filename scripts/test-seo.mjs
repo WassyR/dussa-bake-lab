@@ -118,7 +118,7 @@ test('unknown and hidden products return real 404 responses; writes are rejected
   const hidden = { ...PRODUCTS[0], slug: 'seo-hidden-product', name: 'Hidden Test Draft', active: false }
   await saveProduct(hidden)
   try {
-    for (const slug of ['not-a-product', hidden.slug, '../bad-slug']) {
+    for (const slug of ['not-a-product', hidden.slug, '../bad-slug', 'macaron-collection']) {
       const result = await request(slug)
       assert.equal(result.status, 404)
       assert.match(result.headers['X-Robots-Tag'], /noindex/)

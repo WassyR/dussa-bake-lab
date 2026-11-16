@@ -9,6 +9,7 @@ The canonical site is https://www.dussabakelab.com. The site targets made-to-ord
 - A real `/robots.txt`, `/sitemap.xml` and 404 page. Checkout, confirmation, tracking and admin pages carry `noindex` directives.
 - A public catalogue snapshot, used by both server rendering and client hydration. The build reads the public `/api/catalog` endpoint. If it is unavailable, it uses the same checked-in menu the app uses as its fallback and logs that decision. It never reads customer orders or dashboard credentials.
 - Products created after a build remain accessible through the public page handler with server-visible product content, metadata and status codes. Hidden and missing products return 404. Redeploy after menu/brand changes to refresh the static pages and sitemap. If the catalogue is unavailable during a build, restore its connection before expecting dashboard edits to appear in the generated snapshot.
+- The build accepts a live catalogue only when its menu version matches the checked-in owner menu. This prevents an older deployment from reintroducing the retired sample products while a new menu deploys. Quote-only cakes have no fixed-price Offer in JSON-LD.
 
 `src/lib/seo.js` is the shared metadata and schema source. Business defaults live in `src/data/site.js`; product defaults live in `src/data/catalog.js`. Only the confirmed city/country is included in the business address. Add a public street address, map location or business-profile URL only after the owner confirms it.
 

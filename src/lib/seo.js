@@ -1,11 +1,11 @@
-import { PRODUCTS, CATEGORIES } from '../data/catalog.js'
+import { PRODUCTS, CATEGORIES, isQuoteProduct } from '../data/catalog.js'
 import { BRAND, BRAND_ASSETS, CONTACT, CURRENCY } from '../data/site.js'
 import { photoFor } from '../data/photography.js'
 
 export const SITE_URL = 'https://www.dussabakelab.com'
 export const PUBLIC_PAGES = {
-  '/': { title: 'Custom Cakes in Kigali, Rwanda | Dussa BakeLab', name: 'Home', description: 'Order birthday cakes, wedding cakes, cupcakes and cookies from Dussa BakeLab in Kigali, Rwanda. Browse our menu or plan a custom cake.' },
-  '/creations': { title: 'Cakes, Cupcakes & Cookies in Kigali | Dussa BakeLab', name: 'Menu', type: 'CollectionPage', description: 'Browse cakes, cupcakes, cookies and sweet treats with sizes and prices. Made to order in Kigali, with delivery and collection options.' },
+  '/': { title: 'Custom Cakes in Kigali, Rwanda | Dussa BakeLab', name: 'Home', description: 'Cookies from RWF 300, cupcakes from RWF 500 and cake loaflets at Dussa BakeLab in Kigali. Birthday cakes from RWF 15,000 and custom wedding cakes.' },
+  '/creations': { title: 'Cakes, Cupcakes & Cookies in Kigali | Dussa BakeLab', name: 'Menu', type: 'CollectionPage', description: 'Browse cookies, classic and decorated cupcakes, cake loaflets and birthday cakes with RWF prices. Ask for a custom wedding cake quote in Kigali.' },
   '/about': { title: 'About Dussa BakeLab | Cakes Made to Order in Kigali', name: 'Our story', type: 'AboutPage', description: 'Meet Dussa BakeLab, a bakery in Kigali, Rwanda making cakes, cupcakes and treats for birthdays, weddings and everyday celebrations.' },
   '/contact': { title: 'Contact Dussa BakeLab | Cake Orders & Delivery in Kigali', name: 'Contact', type: 'ContactPage', description: 'Ask about cake designs, dates, collection or delivery in Kigali. Call or WhatsApp Dussa BakeLab on 0788 722 064 to discuss your order.' },
 }
@@ -34,7 +34,7 @@ export function getPageSeo(pathname, options = {}) {
   const indexable = Boolean(page || (slug && product && product.active !== false)) && !options.noindex
   const title = options.title || (product ? `${product.name} in Kigali | Dussa BakeLab` : page?.title || (privateName ? `${privateName} | Dussa BakeLab` : 'Page not found | Dussa BakeLab'))
   const description = descriptionText(options.description || (product ? `Order ${product.name} in Kigali. ${product.description || 'Choose your size and flavour, then arrange collection or delivery.'}` : page?.description || (privateName ? `${privateName} at Dussa BakeLab.` : 'This page could not be found. Browse the Dussa BakeLab menu or contact us in Kigali.')))
-  const image = absoluteUrl(options.image || (product ? photoFor({ ...product, seed: product.slug }) : BRAND_ASSETS.logo))
+  const image = absoluteUrl(options.image || (product && photoFor({ ...product, seed: product.slug })) || BRAND_ASSETS.logo)
   const url = absoluteUrl(path)
   const bakeryId = `${SITE_URL}/#bakery`
   const graph = []
@@ -60,7 +60,7 @@ export function getPageSeo(pathname, options = {}) {
       graph.push({ '@type': 'BreadcrumbList', '@id': `${url}#breadcrumbs`, itemListElement: crumbs.map((crumb, i) => ({ '@type': 'ListItem', position: i + 1, ...crumb })) })
     }
     if (product) {
-      const prices = product.sizes.map(s => Number(s.price)).filter(Number.isFinite)
+      const prices = isQuoteProduct(product) ? [] : product.sizes.map(s => Number(s.price)).filter(Number.isFinite)
       graph.push({
         '@type': 'Product', '@id': `${url}#product`, name: product.name, description: product.description, image: [image], url,
         category: CATEGORIES.find(c => c.id === product.category)?.name || product.category,

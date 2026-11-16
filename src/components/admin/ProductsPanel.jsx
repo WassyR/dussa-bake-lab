@@ -21,6 +21,7 @@ import { CATEGORIES } from '../../data/catalog'
 import { classNames, money } from '../../lib/format'
 
 function priceLabel(product) {
+  if (product.pricing === 'quote') return Number(product.startingPrice) > 0 ? `From ${money(product.startingPrice)}` : 'Quote on request'
   const prices = (product.sizes || []).map((s) => Number(s.price) || 0).filter(Boolean)
   if (prices.length === 0) return '—'
   const min = Math.min(...prices)
@@ -229,8 +230,7 @@ export default function ProductsPanel({
                 </div>
                 <p className="mt-0.5 text-[0.78rem] text-cocoa/55">
                   {CATEGORIES.find((c) => c.id === product.category)?.name} ·{' '}
-                  {(product.sizes || []).length} size
-                  {(product.sizes || []).length === 1 ? '' : 's'} · {product.leadDays}d lead
+                  {product.pricing === 'quote' ? 'Quote on request' : `${(product.sizes || []).length} ${(product.sizes || []).length === 1 ? 'size' : 'sizes'} · ${product.leadDays}d lead`}
                 </p>
               </div>
 

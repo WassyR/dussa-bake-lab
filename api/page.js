@@ -4,6 +4,7 @@ import { getProduct } from './_lib/db.js'
 import { seedIfEmpty } from './_lib/seed.js'
 import { getPageSeo } from '../src/lib/seo.js'
 import { escapeHtml, withSeoHead } from '../src/lib/seoHtml.js'
+import { RETIRED_SAMPLE_SLUGS, fromPrice, isQuoteProduct } from '../src/data/catalog.js'
 
 /** Crawlable responses for menu items created in the dashboard after a build. */
 export default async function handler(req, res) {
@@ -16,7 +17,7 @@ export default async function handler(req, res) {
   const slug = String(req.query?.slug || '')
   let product = null
   let status = 404
-  if (/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) && slug.length <= 160) {
+  if (!RETIRED_SAMPLE_SLUGS.includes(slug) && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) && slug.length <= 160) {
     try {
       await seedIfEmpty()
       product = await getProduct(slug)
@@ -35,7 +36,9 @@ export default async function handler(req, res) {
     <h1 class="mt-6 text-4xl text-espresso">${e(product.name)}</h1>
     <p class="mt-5 text-cocoa">${e(product.description)}</p>
     <p class="mt-4">Made to order in Kigali, Rwanda.</p>
-    <ul class="mt-6">${product.sizes.map(size => `<li>${e(size.label)} — RWF ${e(Number(size.price).toLocaleString('en-US'))}</li>`).join('')}</ul>
+    ${isQuoteProduct(product)
+      ? `<p class="mt-6">${fromPrice(product) ? `Starts from RWF ${e(fromPrice(product).toLocaleString('en-US'))}. ` : ''}Contact us to confirm the size, design and final price.</p>`
+      : `<ul class="mt-6">${product.sizes.map(size => `<li>${e(size.label)} — RWF ${e(Number(size.price).toLocaleString('en-US'))}</li>`).join('')}</ul>`}
     <p class="mt-6"><a href="/contact">Ask about this order</a> · <a href="/creations">Browse the menu</a></p>
   </main>` : `<main class="container-x py-32"><h1>${status === 503 ? 'The menu is temporarily unavailable' : 'Product not found'}</h1><p><a href="/creations">Browse our menu</a> or <a href="/contact">contact us</a>.</p></main>`
   const html = withSeoHead(template, seo).replace('<div id="root"></div>', () => `<div id="root">${body}</div>`)

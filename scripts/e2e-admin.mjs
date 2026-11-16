@@ -56,7 +56,7 @@ await shot('admin-1-orders')
 await page.getByRole('button', { name: 'Products', exact: true }).click()
 await page.waitForTimeout(900)
 const seeded = await page.locator('ul > li').count()
-await check('the seeded menu is listed', () => seeded >= 16)
+await check('the owner-confirmed menu is listed', () => seeded >= 6)
 await shot('admin-2-products')
 
 // 3 — create a product
@@ -246,6 +246,22 @@ await check('the overview shows the day lists', async () =>
   (await page.getByRole('heading', { name: 'Tomorrow', exact: true }).isVisible()),
 )
 await shot('admin-6-overview')
+
+// 11 — custom cake pricing survives a dashboard save without a fake size/price.
+await page.getByRole('button', { name: 'Products', exact: true }).click()
+await page.getByRole('button', { name: 'Edit Birthday Cake', exact: true }).click()
+await page.getByRole('button', { name: 'Sizes & prices', exact: true }).click()
+await check('birthday cake uses quote pricing in the editor', async () =>
+  await page.getByLabel('Pricing', { exact: true }).inputValue() === 'quote' &&
+  await page.getByLabel('Starting price (optional, RWF)').inputValue() === '15000',
+)
+await page.getByRole('button', { name: 'Save product' }).click()
+await page.waitForTimeout(1500)
+await page.goto(`${BASE}/creations/birthday-cake`, { waitUntil: 'networkidle' })
+await check('saving a custom cake preserves the quote flow on the storefront', async () =>
+  await page.getByRole('link', { name: 'Request quote on WhatsApp' }).isVisible() &&
+  await page.getByRole('button', { name: /Add to basket/ }).count() === 0,
+)
 
 failures += errors.length
 console.log(errors.length ? `\nPAGE ERRORS:\n${[...new Set(errors)].join('\n')}` : '\nno page errors')

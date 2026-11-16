@@ -27,7 +27,7 @@ export const PROCESS = [
 
 export const VALUES = [
   { title: 'Baked for your order', body: 'Your cakes and treats are made for the date you choose.' },
-  { title: 'Flavours you love', body: 'Chocolate, vanilla, red velvet or something a little different. Tell us what sounds good.' },
+  { title: 'Your preferences', body: 'Tell us what you like. We will confirm the available flavours and design options with you.' },
   { title: 'A personal touch', body: 'Choose a message, colours or a design idea. We can talk through the details together.' },
   { title: 'Made to share', body: 'From a little treat for two to a cake for a room full of people, we want everyone to get a slice.' },
 ]
@@ -94,7 +94,7 @@ export const FAQS = [
   },
   {
     q: 'Do you cater for allergies or dietary needs?',
-    a: 'We do eggless and lower-sugar versions of most cakes, and can talk through nut-free options. Our kitchen handles nuts, dairy, gluten and eggs, so we cannot promise a fully allergen-free environment. Please contact us about any allergies before ordering.',
+    a: 'Contact us before ordering to discuss ingredients, allergies and dietary requests. Recipes and decorations may contain wheat, eggs, milk and nuts. Any changes need to be confirmed with the bakery.',
   },
   {
     q: 'What if I need to change or cancel my order?',
@@ -102,7 +102,7 @@ export const FAQS = [
   },
   {
     q: 'How should I store my cake?',
-    a: 'Keep buttercream and ganache cakes in the fridge, then take them out 45 minutes before serving so they have time to soften. Cookies and brownies keep in a sealed box at room temperature for three or four days.',
+    a: 'Ask us for storage instructions for your order. Keep cream-filled cakes and cupcakes refrigerated and out of direct sunlight. Keep cookies and unfilled loaflets in a sealed container in a cool, dry place.',
   },
 ]
 
@@ -132,8 +132,8 @@ export const MARQUEE_WORDS = [
   'Made to share',
   'Kigali, Rwanda',
   'Baked to order',
-  'Belgian chocolate',
-  'Real butter',
+  'Cookies & cupcakes',
+  'Cake loaflets',
   'Custom designs',
   'Delivered citywide',
 ]

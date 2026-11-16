@@ -31,27 +31,51 @@ const check = async (label, fn) => {
   }
 }
 
+// Custom cake prices are enquiries, including the birthday starting price.
+for (const [slug, name] of [['birthday-cake', 'Birthday Cake'], ['wedding-cake', 'Custom Wedding Cake']]) {
+  await page.goto(`${BASE}/creations/${slug}`, { waitUntil: 'networkidle' })
+  await page.getByRole('heading', { name, exact: true }).waitFor()
+  await check(`${name}: no fixed-price basket action`, async () =>
+    await page.getByRole('button', { name: /Add to basket/ }).count() === 0,
+  )
+  await page.getByLabel('Approximate guests').fill('40')
+  await page.getByLabel('Your cake ideas').fill('Blue & gold, with a simple design')
+  await check(`${name}: WhatsApp enquiry preserves the customer’s ideas`, async () => {
+    const url = new URL(await page.getByRole('link', { name: 'Request quote on WhatsApp' }).getAttribute('href'))
+    const text = url.searchParams.get('text')
+    return url.hostname === 'wa.me' && text.includes(name.toLowerCase()) && text.includes('40') && text.includes('Blue & gold, with a simple design')
+  })
+  await check(`${name}: search data does not promise a fixed price`, async () => {
+    const graph = JSON.parse(await page.locator('#dussa-seo-data').textContent())['@graph']
+    return !graph.find(p => p['@type'] === 'Product').offers
+  })
+}
+
 // 1 — customise a product and add it to the basket
-await page.goto(`${BASE}/creations/signature-chocolate-drip`, { waitUntil: 'networkidle' })
-await page.getByRole('button', { name: /10" round/ }).click()
-await page.getByRole('button', { name: /Salted caramel/ }).first().click()
-await page.getByRole('button', { name: /Whipped ganache/ }).click()
-await page.getByText('24k edible gold leaf').first().click()
-await page.getByLabel('Message on the cake').fill('Happy Birthday, Keza!')
+await page.goto(`${BASE}/creations/cookies`, { waitUntil: 'networkidle' })
+await page.getByRole('button', { name: /4 pieces/ }).click()
 await page.getByRole('button', { name: 'Increase quantity' }).click()
 
-await check('live total reflects size + flavour + finish + add-on × 2', async () => {
+await check('two four-piece cookie packs cost RWF 2,000', async () => {
   const text = await page.locator('p.font-display.tabular-nums').first().innerText()
-  // 62,000 + 3,000 caramel + 4,000 ganache + 9,000 gold = 78,000 × 2
-  return text.replace(/[^\d]/g, '') === '156000'
+  return text.replace(/[^\d]/g, '') === '2000'
 })
 
 await page.getByRole('button', { name: /Add to basket/ }).click()
 await page.waitForTimeout(700)
 await check('basket drawer opens with the item', async () =>
   (await page.getByRole('dialog', { name: /basket/i }).isVisible()) &&
-  (await page.getByText('Signature Chocolate Drip').first().isVisible()),
+  (await page.getByText('Cookies', { exact: true }).first().isVisible()),
 )
+
+// Add a large loaflet order to exercise the existing deposit acknowledgement.
+await page.goto(`${BASE}/creations/cake-loaflets`, { waitUntil: 'networkidle' })
+for (let i = 1; i < 50; i += 1) await page.getByRole('button', { name: 'Increase quantity' }).click()
+await check('50 loaflets cost RWF 125,000 without unconfirmed extras', async () =>
+  (await page.locator('p.font-display.tabular-nums').first().innerText()).replace(/[^\d]/g, '') === '125000',
+)
+await page.getByRole('button', { name: /Add to basket/ }).click()
+await page.waitForTimeout(700)
 
 // 2 — walk the booking flow
 await page.getByRole('button', { name: /Continue to booking/ }).click()
@@ -60,7 +84,8 @@ await page.waitForTimeout(1400)
 if (OUT) await page.screenshot({ path: `${OUT}/e2e-1-basket.png` })
 
 await check('step 1 lists the configured item', async () =>
-  (await page.getByText('24k edible gold leaf').first().isVisible()),
+  (await page.getByText('4 pieces', { exact: true }).first().isVisible()) &&
+  (await page.getByText('Cake Loaflets', { exact: true }).first().isVisible()),
 )
 
 await page.getByRole('button', { name: 'Continue' }).click()
@@ -134,7 +159,7 @@ await check('confirmation shows the customer name', async () =>
   page.getByText(/Thank you, Keza/).isVisible(),
 )
 await check('the confirmation shows what was ordered', async () =>
-  (await page.getByText('Signature Chocolate Drip').first().isVisible()) &&
+  (await page.getByText('50 × Cake Loaflets', { exact: true }).isVisible()) &&
   (await page.getByText(/RWF/).first().isVisible()),
 )
 await check('an unreachable API is disclosed rather than hidden', async () => {
@@ -151,7 +176,7 @@ await page.goto(`${BASE}/track/${code}`, { waitUntil: 'networkidle' })
 await page.waitForTimeout(1200)
 await check('the order is findable in the tracker', async () =>
   (await page.getByText(`Order ${code}`).isVisible()) &&
-  (await page.getByText('Signature Chocolate Drip').first().isVisible()),
+  (await page.getByText('50 × Cake Loaflets', { exact: true }).isVisible()),
 )
 if (OUT) await page.screenshot({ path: `${OUT}/e2e-4-track.png` })
 

@@ -95,6 +95,8 @@ npm run test:admin   # browser walk-through of the dashboard (21 checks)
 
 See [Search visibility](docs/seo.md) for the pre-rendered pages, catalogue updates,
 Google Search Console submission and Google Business Profile setup.
+The [owner-confirmed menu](docs/menu.md) documents the actual products, RWF prices,
+custom cake enquiries and retirement of the original sample catalogue.
 
 `npm run dev` serves the front end only. To get the API as well, run both:
 

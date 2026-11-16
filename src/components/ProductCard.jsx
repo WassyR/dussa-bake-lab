@@ -3,10 +3,12 @@ import { motion } from 'framer-motion'
 import { ArrowUpRight, Clock } from 'lucide-react'
 import CreationImage from './CreationImage'
 import { Pill } from './ui'
-import { fromPrice } from '../data/catalog'
+import { fromPrice, isQuoteProduct } from '../data/catalog'
 import { money, classNames } from '../lib/format'
 
 export default function ProductCard({ product, index = 0, className = '' }) {
+  const price = fromPrice(product)
+  const quote = isQuoteProduct(product)
   return (
     <motion.article
       layout
@@ -35,17 +37,17 @@ export default function ProductCard({ product, index = 0, className = '' }) {
             {product.bestseller && <Pill tone="dark">Featured</Pill>}
           </div>
 
-          <div className="absolute right-4 top-4">
+          {product.leadDays > 0 && <div className="absolute right-4 top-4">
             <span className="flex items-center gap-1 rounded-full bg-porcelain/85 px-2.5 py-1 text-[0.7rem] font-medium text-cocoa backdrop-blur-sm">
               <Clock size={11} strokeWidth={2} className="text-caramel" />
               {product.leadDays}d
             </span>
-          </div>
+          </div>}
 
           {/* Slides up on hover to invite the click */}
           <div className="absolute inset-x-0 bottom-0 translate-y-full bg-gradient-to-t from-black/85 to-transparent px-5 pb-4 pt-10 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:translate-y-0">
             <span className="inline-flex items-center gap-1.5 text-[0.8125rem] font-medium text-white">
-              Customise & order <ArrowUpRight size={15} strokeWidth={2} />
+              {quote ? 'Plan your cake' : 'Choose & order'} <ArrowUpRight size={15} strokeWidth={2} />
             </span>
           </div>
         </div>
@@ -63,10 +65,10 @@ export default function ProductCard({ product, index = 0, className = '' }) {
           <div className="mt-auto flex items-end justify-between gap-3 pt-5">
             <div>
               <span className="block text-[0.68rem] uppercase tracking-[0.16em] text-cocoa/70">
-                From
+                {quote ? (price ? 'Starts from' : 'Made to order') : (product.sizes.length > 1 ? 'From' : 'Per piece')}
               </span>
               <span className="font-display text-[1.35rem] text-espresso tabular-nums">
-                {money(fromPrice(product))}
+                {price === null ? 'Ask for a quote' : money(price)}
               </span>
             </div>
             <div className="flex flex-wrap justify-end gap-1.5">

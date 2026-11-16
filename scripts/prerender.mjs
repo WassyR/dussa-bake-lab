@@ -2,6 +2,7 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
 import * as http from 'node:http'
 import { DEFAULT_CATALOG } from '../src/data/siteCatalog.js'
+import { MENU_VERSION } from '../src/data/catalog.js'
 import { SITE_URL, absoluteUrl, getPageSeo, indexablePaths } from '../src/lib/seo.js'
 import { withSeoHead, escapeHtml, safeJson } from '../src/lib/seoHtml.js'
 
@@ -14,7 +15,7 @@ try {
   const response = await fetch(`${SITE_URL}/api/catalog`, { signal: AbortSignal.timeout(5000) })
   if (!response.ok) throw new Error('Catalogue unavailable')
   const data = await response.json()
-  if (!Array.isArray(data.products) || !data.products.length || !data.settings) throw new Error('Catalogue unavailable')
+  if (data.menuVersion !== MENU_VERSION || !Array.isArray(data.products) || !data.products.length || !data.settings) throw new Error('Current catalogue unavailable')
   catalog = { products: data.products.filter(p => p.active !== false), settings: data.settings }
   console.log(`Using ${catalog.products.length} products from the public catalogue.`)
 } catch {

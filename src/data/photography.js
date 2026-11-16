@@ -10,7 +10,7 @@ export const PHOTOS = {
   hero: image('photo-1578985545062-69928b1d9587', 1400),
   cake: image('photo-1578985545062-69928b1d9587'),
   birthday: image('photo-1464349095431-e9a21285b5f3'),
-  wedding: image('photo-1513278974582-3e1b4a4fa21e'),
+  wedding: image('photo-1535141192574-5d4897c12636'),
   chocolate: image('photo-1587668178277-295251f900ce'),
   slice: image('photo-1571115177098-24ec42ed204d'),
   cupcake: image('photo-1614707267537-b85aaf00c4b7'),
@@ -34,29 +34,17 @@ export const HERO_PHOTO = {
 }
 
 const PRODUCT_PHOTOS = {
-  'signature-chocolate-drip': PHOTOS.chocolate,
-  'velvet-celebration-cake': PHOTOS.birthday,
-  'ivory-tier-cake': PHOTOS.wedding,
-  'passion-citrus-cake': PHOTOS.slice,
-  'midnight-slice-box': PHOTOS.slice,
-  'classic-cupcake-box': PHOTOS.cupcake,
-  'chocolate-hazelnut-cupcakes': PHOTOS.cupcake,
-  'garden-party-cupcakes': PHOTOS.cupcake,
-  'brown-butter-chocolate-chip': PHOTOS.cookie,
-  'iced-sugar-cookies': PHOTOS.icedCookie,
-  'fudge-brownie-slab': PHOTOS.brownie,
-  'macaron-collection': PHOTOS.macaron,
-  'glazed-doughnuts': PHOTOS.donut,
-  'baked-cheesecake': PHOTOS.cheesecake,
-  'bespoke-design-cake': PHOTOS.birthday,
-  'corporate-dessert-table': PHOTOS.cake,
+  cookies: PHOTOS.cookie,
+  'classic-cupcakes': PHOTOS.cupcake,
+  'decorated-cupcakes': PHOTOS.cupcake,
+  'birthday-cake': PHOTOS.birthday,
+  'wedding-cake': PHOTOS.wedding,
 }
 
 const CATEGORY_PHOTOS = {
   cakes: PHOTOS.cake,
   cupcakes: PHOTOS.cupcake,
   cookies: PHOTOS.cookie,
-  treats: PHOTOS.macaron,
   custom: PHOTOS.wedding,
 }
 const OCCASION_PHOTOS = {
@@ -83,6 +71,8 @@ const ART_PHOTOS = {
 }
 export function photoFor({ photo, seed = '', art = 'dripCake' } = {}) {
   if (photo) return photo
+  // No suitable loaflet example: wait for a bakery photo rather than show a slice.
+  if (seed === 'cake-loaflets' || seed === 'cat-treats') return null
   if (PRODUCT_PHOTOS[seed]) return PRODUCT_PHOTOS[seed]
   if (seed.startsWith('cat-')) return CATEGORY_PHOTOS[seed.slice(4)] || PHOTOS.cake
   if (seed.startsWith('occ-')) return OCCASION_PHOTOS[seed.slice(4)] || PHOTOS.cake
@@ -93,12 +83,8 @@ export function photoFor({ photo, seed = '', art = 'dripCake' } = {}) {
   return ART_PHOTOS[art] || PHOTOS.cake
 }
 export const GALLERY_PHOTOS = [
-  { url: PHOTOS.chocolate, caption: 'Chocolate cake' },
-  { url: PHOTOS.cupcake, caption: 'Cupcakes' },
+  { url: PHOTOS.birthday, caption: 'Birthday cake ideas' },
+  { url: PHOTOS.cupcake, caption: 'Cupcake ideas' },
   { url: PHOTOS.cookie, caption: 'Cookies' },
-  { url: PHOTOS.wedding, caption: 'Celebration cakes' },
-  { url: PHOTOS.macaron, caption: 'Macarons' },
-  { url: PHOTOS.donut, caption: 'Doughnuts' },
-  { url: PHOTOS.cheesecake, caption: 'Cheesecake' },
-  { url: PHOTOS.brownie, caption: 'Brownies' },
+  { url: PHOTOS.wedding, caption: 'Wedding cake ideas' },
 ]

@@ -80,7 +80,7 @@ export default function Hero() {
                   className="mt-7 flex flex-col items-stretch gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3 md:mt-9"
                 >
                   <Button
-                    to="/order"
+                    to="/creations/birthday-cake"
                     variant="gold"
                     size="lg"
                     sheen

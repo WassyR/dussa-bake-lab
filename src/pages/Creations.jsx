@@ -5,7 +5,7 @@ import { Search, SlidersHorizontal, X } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import ProductCard from '../components/ProductCard'
 import { Button, Pill } from '../components/ui'
-import { fromPrice } from '../data/catalog'
+import { fromPrice, isQuoteProduct } from '../data/catalog'
 import { useCatalog } from '../context/CatalogContext'
 import { classNames, money } from '../lib/format'
 import usePageMeta from '../lib/usePageMeta'
@@ -60,13 +60,13 @@ export default function Creations() {
 
     switch (sort) {
       case 'price-asc':
-        list.sort((a, b) => fromPrice(a) - fromPrice(b))
+        list.sort((a, b) => fromPrice(a) === null ? (fromPrice(b) === null ? 0 : 1) : fromPrice(b) === null ? -1 : fromPrice(a) - fromPrice(b))
         break
       case 'price-desc':
-        list.sort((a, b) => fromPrice(b) - fromPrice(a))
+        list.sort((a, b) => fromPrice(a) === null ? (fromPrice(b) === null ? 0 : 1) : fromPrice(b) === null ? -1 : fromPrice(b) - fromPrice(a))
         break
       case 'fastest':
-        list.sort((a, b) => a.leadDays - b.leadDays)
+        list.sort((a, b) => Number(isQuoteProduct(a)) - Number(isQuoteProduct(b)) || a.leadDays - b.leadDays)
         break
       default:
         list.sort((a, b) => Number(Boolean(b.bestseller)) - Number(Boolean(a.bestseller)))
@@ -76,7 +76,7 @@ export default function Creations() {
   }, [products, category, occasion, query, sort])
 
   const activeOccasion = occasions.find((o) => o.id === occasion)
-  const custom = products.find((p) => p.slug === 'bespoke-design-cake')
+  const custom = products.find((p) => p.slug === 'birthday-cake')
   const hasFilters = category !== 'all' || Boolean(occasion) || Boolean(query.trim())
 
   const clearAll = () => {
@@ -89,7 +89,7 @@ export default function Creations() {
       <PageHeader
         eyebrow="The full menu"
         title="Our menu"
-        lead="Choose a cake or treat, pick your size and flavour, and tell us when you need it. Photos show design ideas rather than completed Dussa orders."
+        lead="Choose your cookies, cupcakes or loaflets, or ask us for a birthday or wedding cake quote. Example photos are for inspiration."
         crumbs={[{ label: 'Menu' }]}
       >
         <div className="mt-8 flex flex-wrap gap-2">
@@ -242,8 +242,8 @@ export default function Creations() {
             </h2>
             <p className="mx-auto mt-3 max-w-lg text-[0.9375rem] leading-relaxed text-cocoa/62">
               Send us a reference photo, your preferred colours or a few ideas. We will talk through
-              the design and confirm a price with you. Custom cakes start from{' '}
-              {custom ? money(fromPrice(custom)) : 'RWF 65,000'}.
+              the design and confirm a price with you. Birthday cakes start from{' '}
+              {custom ? money(fromPrice(custom)) : 'RWF 15,000'}. Wedding cakes are quoted individually.
             </p>
             <div className="mt-7 flex flex-wrap justify-center gap-3">
               <Button to={custom ? `/creations/${custom.slug}` : '/contact'} sheen>

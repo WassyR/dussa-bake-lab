@@ -14,7 +14,7 @@ export default function Bestsellers() {
           <SectionHeading
             eyebrow="From the menu"
             title="Find your favourite"
-            lead="Start with a chocolate cake, a box of cupcakes or a few cookies to share."
+            lead="Cookies from RWF 300, classic cupcakes from RWF 500, and cakes for your celebrations."
             className="max-w-xl"
           />
           <Button to="/creations" variant="outline" className="shrink-0">

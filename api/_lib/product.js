@@ -74,11 +74,12 @@ export function sanitiseProduct(input = {}) {
   const name = clean(input.name, 120)
   if (!name) return { error: 'A product needs a name.' }
 
-  const sizes = sanitiseSizes(input.sizes)
-  if (sizes.length === 0) {
+  const quote = input.pricing === 'quote'
+  const sizes = quote ? [] : sanitiseSizes(input.sizes)
+  if (!quote && sizes.length === 0) {
     return { error: 'Add at least one size with a label and a price.' }
   }
-  if (sizes.every((s) => s.price <= 0)) {
+  if (!quote && sizes.every((s) => s.price <= 0)) {
     return { error: 'At least one size needs a price above zero.' }
   }
 
@@ -99,6 +100,8 @@ export function sanitiseProduct(input = {}) {
       category,
       tagline: clean(input.tagline, 120),
       description: clean(input.description, 1500),
+      pricing: quote ? 'quote' : 'fixed',
+      ...(quote && toNumber(input.startingPrice) > 0 ? { startingPrice: toNumber(input.startingPrice) } : {}),
       photo: photo || undefined,
       art,
       flavorArt,
@@ -107,13 +110,13 @@ export function sanitiseProduct(input = {}) {
       position: Number.isFinite(Number(input.position)) ? Number(input.position) : 0,
       rating: rating || undefined,
       reviews: toNumber(input.reviews) || undefined,
-      leadDays: Math.min(60, Math.max(0, toNumber(input.leadDays) || 1)),
+      leadDays: Math.min(60, Math.max(0, input.leadDays === undefined ? 2 : toNumber(input.leadDays))),
       tags: sanitiseStrings(input.tags, 8, 40),
       occasions: sanitiseStrings(input.occasions, 12, 40),
       sizes,
-      flavors: sanitiseDeltas(input.flavors),
-      frostings: sanitiseDeltas(input.frostings),
-      addons: sanitiseAddons(input.addons),
+      flavors: quote ? [] : sanitiseDeltas(input.flavors),
+      frostings: quote ? [] : sanitiseDeltas(input.frostings),
+      addons: quote ? [] : sanitiseAddons(input.addons),
       allowsMessage: Boolean(input.allowsMessage),
       customBrief: Boolean(input.customBrief),
     },

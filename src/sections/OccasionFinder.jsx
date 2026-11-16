@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowRight } from 'lucide-react'
 import CreationImage from '../components/CreationImage'
 import { Button, Section, SectionHeading } from '../components/ui'
-import { fromPrice } from '../data/catalog'
+import { fromPrice, isQuoteProduct } from '../data/catalog'
 import { useCatalog } from '../context/CatalogContext'
 import { money, classNames } from '../lib/format'
 
@@ -105,7 +105,7 @@ export default function OccasionFinder() {
                         {product.name}
                       </h4>
                       <p className="mt-1 text-center text-[0.75rem] text-cocoa/55">
-                        from {money(fromPrice(product))}
+                        {fromPrice(product) === null ? 'Ask for a quote' : `${isQuoteProduct(product) || product.sizes.length > 1 ? 'From ' : ''}${money(fromPrice(product))}`}
                       </p>
                     </Link>
                   </li>
