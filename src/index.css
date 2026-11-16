@@ -1,0 +1,468 @@
+@import 'tailwindcss';
+
+/* ------------------------------------------------------------------
+   Dussa BakeLab — design tokens
+   Palette lifted from the brand flyer: espresso, cocoa, caramel, cream.
+------------------------------------------------------------------- */
+@theme {
+  --color-ink: #180f09;
+  --color-espresso: #2a1810;
+  --color-cocoa: #43281a;
+  --color-choco: #6b4429;
+  --color-mocha: #8a5f3d;
+  --color-caramel: #b98a5e;
+  --color-gold: #d4a574;
+  --color-honey: #e8c9a0;
+  --color-accent-contrast: #2a1810;
+  --color-error-surface: #fff0ed;
+  --color-error-foreground: #932b2b;
+  --color-error-border: #d48c86;
+  --color-success-surface: #edf8f1;
+  --color-success-foreground: #1d693c;
+  --color-warning-surface: #fff3df;
+  --color-warning-foreground: #80501a;
+  --color-blush: #f3e3d3;
+  --color-cream: #faf3ea;
+  --color-porcelain: #fffdfa;
+
+  /* ----------------------------------------------------------------
+     Themed roles. Sections that used to be hard-coded chocolate now
+     use these, so the whole site can flip between the two looks.
+     Values here are the Chocolate theme; Bright overrides them below.
+  ---------------------------------------------------------------- */
+  --color-deep: #2a1810;
+  --color-deep-2: #43281a;
+  --color-deep-3: #180f09;
+  --color-on-deep: #faf3ea;
+  --color-accent: #d4a574;
+  --color-accent-soft: #b98a5e;
+
+  --font-display: 'Fraunces', 'Playfair Display', Georgia, serif;
+  --font-sans: 'Outfit', ui-sans-serif, system-ui, sans-serif;
+  --font-script: 'Parisienne', 'Brush Script MT', cursive;
+
+  --ease-silk: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-swift: cubic-bezier(0.65, 0, 0.35, 1);
+
+  --shadow-soft: 0 2px 8px -2px rgb(42 24 16 / 0.08), 0 12px 32px -12px rgb(42 24 16 / 0.14);
+  --shadow-lift: 0 4px 12px -4px rgb(42 24 16 / 0.1), 0 24px 60px -20px rgb(42 24 16 / 0.24);
+  --shadow-glow: 0 20px 60px -24px rgb(212 165 116 / 0.7);
+
+  --radius-card: 1.5rem;
+}
+
+/* ------------------------------------------------------------------
+   Base
+------------------------------------------------------------------- */
+@layer base {
+  :root {
+    --nav-h: 76px;
+    color-scheme: light;
+    --gradient-gold-from: #995c2f;
+    --gradient-gold-mid: #b57c42;
+    --gradient-gold-to: #854520;
+
+    /* Warm light pooling behind the hero cake. */
+    --hero-glow: radial-gradient(
+        58% 62% at 72% 44%,
+        rgb(212 165 116 / 0.3) 0%,
+        rgb(212 165 116 / 0.06) 46%,
+        transparent 72%
+      ),
+      radial-gradient(46% 50% at 12% 88%, rgb(107 68 41 / 0.5) 0%, transparent 70%);
+    --deep-grain: 0.3;
+  }
+
+  /* ------------------------------------------------------------------
+     Bright: the chocolate sections become warm ivory with dark type.
+     Same layout, same brand, much airier.
+  ------------------------------------------------------------------ */
+  :root[data-theme='bright'] {
+    color-scheme: light;
+    --color-accent-contrast: #ffffff;
+    --color-caramel: #996338;
+    --color-deep: #fdf4e9;
+    --color-deep-2: #f8e8d6;
+    --color-deep-3: #f3ddc6;
+    --color-on-deep: #2f1c11;
+    --color-accent: #a0692f;
+    --color-accent-soft: #8a5f3d;
+
+    --color-cream: #fffaf3;
+    --color-porcelain: #ffffff;
+    --color-blush: #fbe9d8;
+
+    --hero-glow: radial-gradient(
+        60% 64% at 70% 40%,
+        rgb(255 214 158 / 0.55) 0%,
+        rgb(255 236 210 / 0.4) 44%,
+        transparent 74%
+      ),
+      radial-gradient(50% 54% at 10% 90%, rgb(246 220 190 / 0.85) 0%, transparent 72%);
+    --deep-grain: 0.16;
+  }
+
+  /*
+   * Chocolate mode must be a complete dark site, not just a dark footer.
+   * Existing components use cream/porcelain/blush as surface roles and
+   * espresso/cocoa/choco as foreground roles. Swap those roles together,
+   * so cards, forms, menus, pages and product grids all remain readable.
+   */
+  :root[data-theme='chocolate'] {
+    color-scheme: dark;
+    --gradient-gold-from: #f2d3a7;
+    --gradient-gold-mid: #d6a976;
+    --gradient-gold-to: #ffe2b7;
+
+    --color-ink: #faeddf;
+    --color-espresso: #faecdc;
+    --color-cocoa: #e4cbb5;
+    --color-choco: #f0d6bb;
+    --color-mocha: #d9ae87;
+    --color-caramel: #deb68c;
+    --color-gold: #e1ba87;
+    --color-honey: #ead0aa;
+
+    --color-cream: #1b110d;
+    --color-porcelain: #2a1c15;
+    --color-blush: #38261d;
+
+    --color-deep: #21140e;
+    --color-deep-2: #2d1c14;
+    --color-deep-3: #170d09;
+    --color-on-deep: #f8eddd;
+    --color-accent: #e5b885;
+    --color-accent-soft: #d1a177;
+    --color-accent-contrast: #22130c;
+    --color-error-surface: #40211d;
+    --color-error-foreground: #ffb8ae;
+    --color-error-border: #94504a;
+    --color-success-surface: #1c3a2b;
+    --color-success-foreground: #a2e9b9;
+    --color-warning-surface: #48311c;
+    --color-warning-foreground: #ffdaa1;
+
+    --hero-glow: radial-gradient(
+      58% 62% at 72% 44%,
+      rgb(198 119 52 / 0.19) 0%,
+      rgb(108 55 23 / 0.07) 48%,
+      transparent 75%
+    ), radial-gradient(48% 55% at 15% 95%, rgb(73 35 18 / 0.3) 0%, transparent 74%);
+    --deep-grain: 0.2;
+  }
+
+  /* The site starts bright unless someone picks otherwise. */
+  html {
+    background-color: var(--color-cream);
+  }
+
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: calc(var(--nav-h) + 1rem);
+  }
+
+  body {
+    background-color: var(--color-cream);
+    transition:
+      background-color 0.4s var(--ease-silk),
+      color 0.4s var(--ease-silk);
+    color: var(--color-espresso);
+    font-family: var(--font-sans);
+    font-synthesis-weight: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    font-optical-sizing: auto;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  ::selection {
+    background: var(--color-gold);
+    color: var(--color-espresso);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-choco);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar {
+    width: 11px;
+    height: 11px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--color-blush);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-caramel);
+    border-radius: 99px;
+    border: 3px solid var(--color-blush);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-choco);
+  }
+}
+
+/* ------------------------------------------------------------------
+   Utilities
+------------------------------------------------------------------- */
+@utility container-x {
+  width: 100%;
+  margin-inline: auto;
+  max-width: 84rem;
+  padding-inline: 1.25rem;
+
+  @media (width >= 48rem) {
+    padding-inline: 2.5rem;
+  }
+  @media (width >= 80rem) {
+    padding-inline: 3.5rem;
+  }
+}
+
+/* Small all-caps label used above section headings */
+@utility eyebrow {
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+}
+
+@utility script {
+  font-family: var(--font-script);
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+
+/* Warm gradient text for accent words inside display headings */
+@utility text-gradient-gold {
+  background: linear-gradient(105deg, var(--gradient-gold-from) 0%, var(--gradient-gold-mid) 42%, var(--gradient-gold-to) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Paper-grain overlay: sits above a section's background, below its content */
+@utility grain {
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: var(--deep-grain, 0.3);
+    mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 240 240' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.42'/%3E%3C/svg%3E");
+    background-size: 200px 200px;
+  }
+}
+
+/* Shared background for the hero and other "deep" panels. */
+@utility deep-panel {
+  background-color: var(--color-deep);
+  color: var(--color-on-deep);
+}
+
+@utility glass {
+  background: color-mix(in srgb, var(--color-porcelain) 90%, transparent);
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+}
+
+/* Thin hairline divider in brand brown */
+@utility hairline {
+  border-color: color-mix(in srgb, var(--color-caramel) 34%, transparent);
+}
+
+/* ------------------------------------------------------------------
+   Keyframes
+------------------------------------------------------------------- */
+@keyframes marquee-x {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@keyframes drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate3d(0, -14px, 0) rotate(2deg);
+  }
+}
+
+@keyframes shimmer {
+  from {
+    background-position: -180% 0;
+  }
+  to {
+    background-position: 180% 0;
+  }
+}
+
+.animate-marquee {
+  animation: marquee-x var(--marquee-duration, 38s) linear infinite;
+}
+.animate-drift {
+  animation: drift 7s var(--ease-silk) infinite;
+}
+
+.pause-on-hover:hover .animate-marquee {
+  animation-play-state: paused;
+}
+
+/* Shimmering sweep used on primary buttons */
+.sheen {
+  background-image: linear-gradient(
+    100deg,
+    transparent 20%,
+    rgb(255 255 255 / 0.22) 38%,
+    transparent 56%
+  );
+  background-size: 220% 100%;
+  animation: shimmer 4.5s var(--ease-silk) infinite;
+}
+
+/* ------------------------------------------------------------------
+   Motion preferences
+------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Hide the number-input spinners on quantity fields */
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  -moz-appearance: textfield;
+}
+
+/* Native date/time pickers, tinted to the brand */
+input[type='date']::-webkit-calendar-picker-indicator,
+input[type='time']::-webkit-calendar-picker-indicator {
+  filter: sepia(0.6) saturate(2.2) hue-rotate(340deg);
+  cursor: pointer;
+}
+
+/* ---------------------------------------------------------------
+   Homepage film
+
+   The footage is cinemascope (about 2.39:1) inside YouTube's 16:9
+   player, so YouTube draws black bars above and below it. Covering
+   the hero with the *player* leaves those bars on screen; this covers
+   it with the *picture* instead. The layer is a size container, so
+   the player is made wide enough that its picture height (width ÷
+   2.39) is at least the layer's height, and at least as wide as the
+   layer. The bars, YouTube's title strip and its logo all end up
+   outside the frame. 4% extra so a rounding pixel never shows.
+---------------------------------------------------------------- */
+.hero-film-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  container-type: size;
+}
+
+.hero-film-frame {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: calc(max(100cqw, 239cqh) * 1.04);
+  height: auto;
+  aspect-ratio: 16 / 9;
+  transform: translate(-50%, -50%);
+  border: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.hero-film-frame.is-showing {
+  opacity: 1;
+}
+
+/* Autoplay was refused, so the player itself has to take the tap. */
+.hero-film-frame.is-tappable {
+  pointer-events: auto;
+}
+
+/* On a phone the film sits in the upper part of the hero and melts into
+   the still below it, where the headline is. Full-height, a 2.39:1 film
+   would have to be blown up five times over to fill a portrait screen. */
+@media (max-width: 767px) {
+  .hero-film-layer {
+    bottom: 34%;
+    -webkit-mask-image: linear-gradient(to bottom, #000 58%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 58%, transparent 100%);
+  }
+}
+
+/* The still drifts very slowly, so the hero is alive before the film
+   arrives and on every visit where it never does. */
+.hero-still {
+  transform-origin: 60% 40%;
+  animation: hero-drift 32s ease-in-out infinite alternate;
+}
+
+@keyframes hero-drift {
+  from {
+    transform: scale(1.04);
+  }
+  to {
+    transform: scale(1.12) translate3d(-1.2%, 0.8%, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-still {
+    animation: none;
+    transform: scale(1.04);
+  }
+}
+
+/* Preserve readable native fields and focus indicators in both looks. */
+input, select, textarea { accent-color: var(--color-accent); }
+:root[data-theme='chocolate'] input,
+:root[data-theme='chocolate'] textarea,
+:root[data-theme='chocolate'] select { color-scheme: dark; }
+:root[data-theme='bright'] input,
+:root[data-theme='bright'] textarea,
+:root[data-theme='bright'] select { color-scheme: light; }
