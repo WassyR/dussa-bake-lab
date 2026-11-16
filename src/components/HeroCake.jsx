@@ -61,8 +61,6 @@ function canAutoplay(reducedMotion) {
   return !reducedMotion
 }
 
-const isPhone = () => window.matchMedia('(max-width: 767px)').matches
-
 /**
  * The homepage film.
  *
@@ -125,6 +123,21 @@ export default function HeroCake({ children }) {
     )
   }, [])
 
+  const startPlayback = useCallback(() => {
+    if (userPaused.current) return
+    // Some players finish loading without honouring the URL's autoplay flag.
+    // Muting before playVideo also satisfies browsers' muted-autoplay policy.
+    send({ event: 'command', func: 'mute', args: [] })
+    send({ event: 'command', func: 'playVideo', args: [] })
+  }, [send])
+
+  const askForTap = useCallback(() => {
+    if (userPaused.current) return
+    setNeedsTap(true)
+    setShowing(true)
+    setWanted(false)
+  }, [])
+
   /* ------------------------------------------------------ autoplay */
   useEffect(() => {
     if (!canAutoplay(reducedMotion)) return undefined
@@ -158,6 +171,20 @@ export default function HeroCake({ children }) {
         return
       }
       talking.current = true
+
+      if (data?.event === 'onReady') {
+        // Register after the player is ready; commands sent while the iframe
+        // is still initialising can be ignored by YouTube.
+        for (const event of ['onStateChange', 'onAutoplayBlocked']) {
+          send({ event: 'command', func: 'addEventListener', args: [event] })
+        }
+        startPlayback()
+        return
+      }
+      if (data?.event === 'onAutoplayBlocked') {
+        askForTap()
+        return
+      }
 
       // Keep the loop inside the window: fade out before FILM_END, rewind at it.
       const time = data?.info?.currentTime
@@ -211,20 +238,7 @@ export default function HeroCake({ children }) {
 
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)
-  }, [mounted, send])
-
-  /** Autoplay was refused: show the player and let a tap reach it. */
-  const askForTap = useCallback(() => {
-    // Phones have no film controls at all, so a refused phone simply stays
-    // on the moving still rather than showing YouTube's play button.
-    if (isPhone()) {
-      setShowing(false)
-      return
-    }
-    setNeedsTap(true)
-    setShowing(true)
-    setWanted(false)
-  }, [])
+  }, [mounted, send, startPlayback, askForTap])
 
   const onFrameLoad = () => {
     // The player's API is not always ready the instant its page loads, so ask
@@ -238,6 +252,15 @@ export default function HeroCake({ children }) {
       later(ask, 400)
     }
     ask()
+
+    // Retry a player that returns to UNSTARTED/CUED after loading. Stop once
+    // playback begins or the visitor pauses; buffering gets time to finish.
+    const retryStart = (attempt) => {
+      if (everPlayed.current || userPaused.current || needsTapRef.current) return
+      if (talking.current && lastState.current !== BUFFERING) startPlayback()
+      if (attempt < 5) later(() => retryStart(attempt + 1), 1500)
+    }
+    later(() => retryStart(0), 1000)
 
     // A player that never answers at all (an extension eating postMessage, a
     // changed API) should not mean a film that never appears: show it, and
@@ -291,7 +314,7 @@ export default function HeroCake({ children }) {
     userPaused.current = false
     setWanted(true)
     if (mounted && talking.current) {
-      send({ event: 'command', func: 'playVideo', args: [] })
+      startPlayback()
     } else {
       setMounted(true)
     }
@@ -336,7 +359,7 @@ export default function HeroCake({ children }) {
       onClick={toggle}
       aria-pressed={wanted}
       aria-label={label}
-      className="flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-black/25 text-white backdrop-blur-md transition-colors active:bg-black/45 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+      className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-black/25 text-white backdrop-blur-md transition-colors active:bg-black/45 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
     >
       {icon}
     </button>
@@ -375,6 +398,12 @@ export default function HeroCake({ children }) {
           )}
         </div>
       </div>
+
+      {(!mounted || needsTap) && (
+        <div className="pointer-events-none absolute right-4 top-24 z-20 md:hidden">
+          {compact}
+        </div>
+      )}
 
       {typeof children === 'function' ? children({ controls, compact, needsTap }) : children}
     </>

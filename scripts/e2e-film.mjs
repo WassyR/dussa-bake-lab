@@ -12,21 +12,25 @@ const FAKE_PLAYER = `<!doctype html><html><head><style>
        width:100vw;height:calc(100vw / 2.39);max-height:100vh;max-width:calc(100vh * 2.39)}
 </style></head><body><div id="pic"></div><script>
   let told = false
+  let readyToPlay = false
+  let autoplayAllowed = true
   addEventListener('message', (e) => {
     let d; try { d = JSON.parse(e.data) } catch { return }
     if (d.event === 'listening' && !told) {
       told = true
       parent.postMessage(JSON.stringify({event:'onReady'}), '*')
+      setTimeout(() => { readyToPlay = true }, ${Number(process.env.PLAY_DELAY || 1500)})
       setTimeout(() => parent.postMessage(JSON.stringify({event:'infoDelivery',info:{playerState:3}}), '*'), 300)
       setTimeout(() => parent.postMessage(JSON.stringify({event:'onStateChange',info:1}), '*'), ${Number(process.env.PLAY_DELAY || 1500)})
     }
     if (d.event === 'command' && d.func === 'pauseVideo') parent.postMessage(JSON.stringify({event:'onStateChange',info:2}), '*')
-    if (d.event === 'command' && d.func === 'playVideo') parent.postMessage(JSON.stringify({event:'onStateChange',info:1}), '*')
+    if (d.event === 'command' && d.func === 'playVideo' && readyToPlay && autoplayAllowed) parent.postMessage(JSON.stringify({event:'onStateChange',info:1}), '*')
   })
   // A tap inside the player starts it, which is the only thing that works
   // once a phone has refused autoplay.
   addEventListener('click', () => {
     window.__tapped = true
+    autoplayAllowed = true
     parent.postMessage(JSON.stringify({event:'onStateChange',info:1}), '*')
   })
 </script></body></html>`
@@ -66,6 +70,63 @@ async function scanForBars(page) {
       opacity: getComputedStyle(frame).opacity,
     }
   })
+}
+
+// A real player can become ready without starting, or return to UNSTARTED
+// after buffering. URL autoplay alone must not leave the background stalled.
+for (const [label, viewport, stallOnce] of [
+  ['desktop ready without autoplay', { width: 1440, height: 900 }, false],
+  ['phone stalls after buffering', { width: 390, height: 844 }, true],
+]) {
+  const player = `<!doctype html><body style="margin:0;background:#2ecc71"><script>
+    let ready = false, muted = false
+    window.__starts = 0
+    const say = (o) => parent.postMessage(JSON.stringify(o), '*')
+    addEventListener('message', (e) => {
+      let d; try { d = JSON.parse(e.data) } catch { return }
+      if (d.event === 'listening' && !ready) {
+        ready = true
+        say({event:'onReady'})
+        say({event:'onStateChange',info:-1})
+      }
+      if (d.func === 'mute') muted = true
+      if (d.func === 'playVideo' && ready && muted) {
+        window.__starts += 1
+        if (${stallOnce} && window.__starts === 1) {
+          say({event:'onStateChange',info:3})
+          setTimeout(() => say({event:'onStateChange',info:-1}), 300)
+        } else say({event:'onStateChange',info:1})
+      }
+    })
+  </script>`
+  const page = await browser.newPage({ viewport })
+  await page.route('https://www.youtube-nocookie.com/**', route =>
+    route.fulfill({ contentType: 'text/html', body: player }),
+  )
+  await page.route('https://images.unsplash.com/**', serveStill)
+  await page.goto('http://127.0.0.1:5173/', { waitUntil: 'domcontentloaded' })
+  await page.waitForSelector('iframe.is-showing:not(.is-tappable)', { timeout: 6000 })
+  const frame = await (await page.$('iframe.hero-film-frame')).contentFrame()
+  const starts = await frame.evaluate(() => window.__starts)
+  check(`${label}: muted playback starts without a visitor tap`, starts >= (stallOnce ? 2 : 1), String(starts))
+  check(`${label}: removed YouTube credit stays absent`, await page.getByText('Film via YouTube').count() === 0)
+  await page.close()
+}
+
+// Respect reduced motion while leaving an explicit start control on phones.
+{
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' })
+  await page.route('https://www.youtube-nocookie.com/**', route =>
+    route.fulfill({ contentType: 'text/html', body: FAKE_PLAYER }),
+  )
+  await page.route('https://images.unsplash.com/**', serveStill)
+  await page.goto('http://127.0.0.1:5173/', { waitUntil: 'domcontentloaded' })
+  await page.getByRole('button', { name: 'Play the background film' }).waitFor()
+  check('reduced motion: no video loads before it is requested', await page.locator('iframe').count() === 0)
+  await page.getByRole('button', { name: 'Play the background film' }).click()
+  await page.waitForSelector('iframe.is-showing:not(.is-tappable)', { timeout: 6000 })
+  check('reduced motion: a phone visitor can choose to play', await page.locator('iframe.is-showing').count() === 1)
+  await page.close()
 }
 
 for (const [label, viewport] of [
@@ -142,11 +203,17 @@ for (const [label, viewport] of [
 
   // Pausing must go back to the still, not to YouTube's pause screen.
   await page.getByRole('button', { name: 'Pause the background film' }).click()
-  await page.waitForTimeout(1900)
+  await page.waitForFunction(() =>
+    Number(getComputedStyle(document.querySelector('iframe.hero-film-frame')).opacity) < 0.05,
+    null, { timeout: 6000 },
+  )
   const paused = await scanForBars(page)
   check(`${label}: pausing fades back to the still`, Number(paused.opacity) < 0.05, paused.opacity)
   await page.getByRole('button', { name: 'Play the background film' }).click()
-  await page.waitForTimeout(1900)
+  await page.waitForFunction(() =>
+    Number(getComputedStyle(document.querySelector('iframe.hero-film-frame')).opacity) > 0.95,
+    null, { timeout: 6000 },
+  )
   const resumed = await scanForBars(page)
   check(`${label}: playing again fades the film back in`, Number(resumed.opacity) > 0.95, resumed.opacity)
 
@@ -223,7 +290,9 @@ for (const [label, viewport] of [
    player itself, because a tap on our own button cannot start it. */
 {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
-  const refusing = FAKE_PLAYER.replace("info:1}), '*'), ", "info:5}), '*'), ")
+  const refusing = FAKE_PLAYER
+    .replace('let autoplayAllowed = true', 'let autoplayAllowed = false')
+    .replace("info:1}), '*'), ", "info:5}), '*'), ")
   await page.route('https://www.youtube-nocookie.com/**', (route) =>
     route.fulfill({ status: 200, contentType: 'text/html', body: refusing }),
   )
@@ -232,11 +301,17 @@ for (const [label, viewport] of [
   await page.waitForSelector('iframe.hero-film-frame', { state: 'attached', timeout: 8000 })
   await page.waitForTimeout(10000)
   const g = await scanForBars(page)
-  check('refused phone: stays on the still, no YouTube play button', Number(g.opacity) < 0.05, g.opacity)
+  check('refused phone: the player is reachable for a tap', Number(g.opacity) > 0.95, g.opacity)
   check(
-    'refused phone: still no button or hint',
-    (await page.getByRole('button', { name: /background film/ }).count()) === 0 &&
-      (await page.getByText('Tap the film to play').filter({ visible: true }).count()) === 0,
+    'refused phone: explains how to start the film',
+    (await page.getByText('Tap the film to play').filter({ visible: true }).count()) === 1,
+  )
+  const tap = await page.locator('.hero-film-layer').boundingBox()
+  await page.touchscreen.tap(tap.x + tap.width / 2, tap.y + tap.height * 0.35)
+  await page.waitForTimeout(500)
+  check('refused phone: tapping starts playback and removes the hint',
+    (await page.getByText('Tap the film to play').filter({ visible: true }).count()) === 0 &&
+      (await page.locator('iframe.hero-film-frame.is-showing:not(.is-tappable)').count()) === 1,
   )
   await page.close()
 }
@@ -245,7 +320,9 @@ for (const [label, viewport, mobile] of [
   ['desktop', { width: 1440, height: 900 }, false],
 ]) {
   const page = await browser.newPage({ viewport, isMobile: mobile, hasTouch: mobile })
-  const refusing = FAKE_PLAYER.replace("info:1}), '*'), ", "info:5}), '*'), ")
+  const refusing = FAKE_PLAYER
+    .replace('let autoplayAllowed = true', 'let autoplayAllowed = false')
+    .replace("info:1}), '*'), ", "info:5}), '*'), ")
   await page.route('https://www.youtube-nocookie.com/**', (route) =>
     route.fulfill({ status: 200, contentType: 'text/html', body: refusing }),
   )
