@@ -35,46 +35,6 @@ const FAKE_PLAYER = `<!doctype html><html><head><style>
   })
 </script></body></html>`
 
-// Model a browser that refuses every scripted start, even muted playVideo.
-// Only a trusted gesture on the visible native button can start this player.
-const BLOCKED_PLAYER = `<!doctype html><html><head><meta charset="utf-8"><style>
-  html,body{margin:0;height:100%;background:#38291f;overflow:hidden}
-  body{display:grid;place-items:center}
-  button{width:70px;height:48px;border:0;border-radius:12px;background:#d22;color:white;font-size:24px;cursor:pointer}
-  button[hidden]{display:none}
-</style></head><body><button id="native-play" aria-label="Play video">▶</button><script>
-  const nativeMode = new URL(location.href).searchParams.get('controls') === '1'
-  const button = document.getElementById('native-play')
-  button.hidden = !nativeMode
-  window.__nativeTaps = 0
-  window.__scriptStarts = 0
-  let ready = false
-  const say = o => parent.postMessage(JSON.stringify(o), '*')
-  addEventListener('message', e => {
-    let d; try { d = JSON.parse(e.data) } catch { return }
-    if (d.event === 'listening' && !ready) {
-      ready = true
-      say({event:'onReady'})
-      say({event:'onStateChange',info:5})
-    }
-    if (d.func === 'playVideo') {
-      window.__scriptStarts += 1
-      say({event:'onAutoplayBlocked'})
-      say({event:'onStateChange',info:5})
-    }
-    if (d.func === 'pauseVideo') {
-      button.hidden = !nativeMode
-      say({event:'onStateChange',info:2})
-    }
-  })
-  button.addEventListener('click', e => {
-    if (!nativeMode || !e.isTrusted) return
-    window.__nativeTaps += 1
-    button.hidden = true
-    say({event:'onStateChange',info:1})
-  })
-</script></body></html>`
-
 const STILL = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000"><defs>
 <radialGradient id="g" cx="62%" cy="42%" r="70%"><stop offset="0" stop-color="#e8b98a"/>
 <stop offset=".45" stop-color="#8a5532"/><stop offset="1" stop-color="#2a160c"/></radialGradient></defs>
@@ -341,72 +301,87 @@ for (const [label, viewport] of [
   await page.close()
 }
 
-/* Low Power Mode/in-app browser fallback: a real native Play control must be
-   visible and receive the touch. A command-only custom button is insufficient. */
-for (const [label, viewport, mobile] of [
-  ['phone', { width: 390, height: 844 }, true],
-  ['short phone', { width: 320, height: 568 }, true],
-  ['tablet', { width: 820, height: 1180 }, true],
-  ['desktop', { width: 1440, height: 900 }, false],
-]) {
-  const page = await browser.newPage({ viewport, isMobile: mobile, hasTouch: mobile })
-  await page.route('https://www.youtube-nocookie.com/**', route =>
-    route.fulfill({ contentType: 'text/html', body: BLOCKED_PLAYER }),
+/* Autoplay refused (Low Power Mode, in-app browsers): the tap must reach the
+   player itself, because a tap on our own button cannot start it. */
+{
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
+  const refusing = FAKE_PLAYER
+    .replace('let autoplayAllowed = true', 'let autoplayAllowed = false')
+    .replace("info:1}), '*'), ", "info:5}), '*'), ")
+  await page.route('https://www.youtube-nocookie.com/**', (route) =>
+    route.fulfill({ status: 200, contentType: 'text/html', body: refusing }),
   )
   await page.route('https://images.unsplash.com/**', serveStill)
   await page.goto('http://127.0.0.1:5173/', { waitUntil: 'domcontentloaded' })
-  await page.waitForFunction(() =>
-    document.querySelector('iframe.is-tappable')?.src.includes('controls=1'),
-    null, { timeout: 8000 },
+  await page.waitForSelector('iframe.hero-film-frame', { state: 'attached', timeout: 8000 })
+  await page.waitForTimeout(10000)
+  const g = await scanForBars(page)
+  check('refused phone: the player is reachable for a tap', Number(g.opacity) > 0.95, g.opacity)
+  check(
+    'refused phone: explains how to start the film',
+    (await page.getByText('Tap the film to play').filter({ visible: true }).count()) === 1,
   )
-  const handle = await page.$('iframe.hero-film-frame')
-  const frame = await handle.contentFrame()
-  const nativePlay = frame.getByRole('button', { name: 'Play video', exact: true })
-  await nativePlay.waitFor()
-  const bounds = await handle.boundingBox()
-  check(`blocked ${label}: the native player fits visibly on screen`,
-    bounds.width >= 200 && bounds.height >= 200 &&
-      bounds.x >= 0 && bounds.y >= 70 && bounds.x + bounds.width <= viewport.width &&
-      bounds.y + bounds.height <= viewport.height,
-    JSON.stringify(bounds),
+  const tap = await page.locator('.hero-film-layer').boundingBox()
+  await page.touchscreen.tap(tap.x + tap.width / 2, tap.y + tap.height * 0.35)
+  await page.waitForTimeout(500)
+  check('refused phone: tapping starts playback and removes the hint',
+    (await page.getByText('Tap the film to play').filter({ visible: true }).count()) === 0 &&
+      (await page.locator('iframe.hero-film-frame.is-showing:not(.is-tappable)').count()) === 1,
   )
-  check(`blocked ${label}: asks for a tap on the actual player`,
-    await page.getByText('Tap Play in the video to start', { exact: true }).isVisible() &&
-      await page.getByRole('button', { name: 'Play the background film' }).count() === 0,
+  await page.close()
+}
+
+for (const [label, viewport, mobile] of [
+  ['desktop', { width: 1440, height: 900 }, false],
+]) {
+  const page = await browser.newPage({ viewport, isMobile: mobile, hasTouch: mobile })
+  const refusing = FAKE_PLAYER
+    .replace('let autoplayAllowed = true', 'let autoplayAllowed = false')
+    .replace("info:1}), '*'), ", "info:5}), '*'), ")
+  await page.route('https://www.youtube-nocookie.com/**', (route) =>
+    route.fulfill({ status: 200, contentType: 'text/html', body: refusing }),
   )
-  check(`blocked ${label}: stops retrying scripted autoplay in native mode`,
-    await frame.evaluate(() => window.__scriptStarts === 0),
+  await page.route('https://images.unsplash.com/**', serveStill)
+  await page.goto('http://127.0.0.1:5173/', { waitUntil: 'domcontentloaded' })
+  await page.waitForSelector('iframe.hero-film-frame', { state: 'attached', timeout: 8000 })
+  await page.waitForTimeout(3000)
+  const before = await scanForBars(page)
+  check(`refused ${label}: nothing is revealed while we wait`, Number(before.opacity) < 0.05, before.opacity)
+
+  await page.waitForTimeout(6500)
+  const g = await scanForBars(page)
+  check(`refused ${label}: the player is shown so it can be tapped`, Number(g.opacity) > 0.95, g.opacity)
+  check(
+    `refused ${label}: a hint says to tap the film`,
+    (await page.getByText('Tap the film to play').filter({ visible: true }).count()) === 1,
   )
-  const button = await nativePlay.boundingBox()
-  const spot = { x: button.x + button.width / 2, y: button.y + button.height / 2 }
-  const hit = await page.evaluate(({x,y}) => document.elementFromPoint(x,y)?.tagName, spot)
-  check(`blocked ${label}: the native Play button is not covered by page content`, hit === 'IFRAME', hit)
-  if (mobile) await page.touchscreen.tap(spot.x, spot.y)
-  else await nativePlay.press('Enter')
-  await page.waitForSelector('iframe.is-showing:not(.is-tappable)', { timeout: 5000 })
-  check(`blocked ${label}: a direct gesture starts playback`,
-    await frame.evaluate(() => window.__nativeTaps === 1),
-  )
-  check(`blocked ${label}: playback becomes the background without reloading`,
-    await page.getByRole('button', { name: 'Pause the background film' }).isVisible() &&
-      await frame.evaluate(() => window.__nativeTaps === 1) &&
-      await page.getByText('Tap Play in the video to start').count() === 0,
-  )
-  if (label === 'phone') {
-    // If this browser also refuses a later scripted resume, keep the same
-    // native player and offer another direct gesture instead of a dead button.
-    await page.getByRole('button', { name: 'Pause the background film' }).click()
-    await page.getByRole('button', { name: 'Play the background film' }).click()
-    await page.waitForSelector('iframe.is-tappable', { timeout: 5000 })
-    await nativePlay.waitFor()
-    const again = await nativePlay.boundingBox()
-    await page.touchscreen.tap(again.x + again.width / 2, again.y + again.height / 2)
-    await page.waitForSelector('iframe.is-showing:not(.is-tappable)', { timeout: 5000 })
-    check('blocked phone: resume also recovers through the native control',
-      await frame.evaluate(() => window.__nativeTaps === 2),
+
+  // Somewhere on the film clear of the copy, the topmost element must be the
+  // player — otherwise the copy column or a shade swallows the tap.
+  const spot = await page.evaluate(() => {
+    const layer = document.querySelector('.hero-film-layer').getBoundingClientRect()
+    const copy = document.querySelector('#home-hero-title').closest('div').getBoundingClientRect()
+    const x = Math.round(layer.left + layer.width * (window.innerWidth < 768 ? 0.5 : 0.78))
+    const y = Math.round(
+      window.innerWidth < 768 ? layer.top + (copy.top - layer.top) * 0.55 : layer.top + layer.height * 0.5,
     )
-  }
-  if (OUT) await page.screenshot({ path: `${OUT}/film-recovered-${label.replaceAll(' ', '-')}.png` })
+    const hit = document.elementFromPoint(x, y)
+    return { x, y, hit: hit?.tagName, cls: hit?.className?.toString?.() || '' }
+  })
+  check(
+    `refused ${label}: a tap on the film reaches the player`,
+    spot.hit === 'IFRAME',
+    JSON.stringify(spot),
+  )
+
+  if (mobile) await page.touchscreen.tap(spot.x, spot.y)
+  else await page.mouse.click(spot.x, spot.y)
+  await page.waitForTimeout(1500)
+  check(
+    `refused ${label}: the tap starts the film and the normal control returns`,
+    await page.getByRole('button', { name: 'Pause the background film' }).isVisible(),
+  )
+  await page.screenshot({ path: OUT ? `${OUT}/film-refused-${label}.png` : undefined })
   await page.close()
 }
 

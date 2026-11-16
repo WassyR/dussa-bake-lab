@@ -23,7 +23,7 @@ export default function Hero() {
       className={`relative isolate min-h-[100svh] overflow-hidden transition-colors duration-500 ${isBright ? "bg-[#fff4e6] text-[#2a1810]" : "bg-[#1a0e09] text-white"}`}
     >
       <HeroCake>
-        {({ controls, needsTap }) => (
+        {({ controls }) => (
           <>
             {/* Shade, in three layers: the top so the navbar reads over moving
                 footage, the reading side so the headline does, and a soft
@@ -44,7 +44,7 @@ export default function Hero() {
             {/* The copy column spans the whole hero, so it lets taps through to
                 the film behind it; only its actual content takes them. */}
             <div
-              className={`container-x pointer-events-none relative z-10 flex min-h-[100svh] flex-col justify-end pb-10 pt-[min(48svh,440px)] md:justify-center md:pb-12 md:pt-32 ${needsTap ? 'hero-copy--manual' : ''}`}
+              className="container-x pointer-events-none relative z-10 flex min-h-[100svh] flex-col justify-end pb-10 pt-[min(48svh,440px)] md:justify-center md:pb-12 md:pt-32"
             >
               <div className="pointer-events-auto max-w-[44rem]">
                 <motion.p

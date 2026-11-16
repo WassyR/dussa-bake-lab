@@ -27,19 +27,19 @@ const FILM_START = 3.5
 const FILM_END = 37
 const FADE_OUT_AT = FILM_END - 1.8 // the fade takes 1.6s; finish it before the cut
 
-function embedUrl(nativeControls = false) {
+function embedUrl() {
   const params = new URLSearchParams({
-    autoplay: nativeControls ? '0' : '1',
+    autoplay: '1',
     mute: '1',
     playsinline: '1',
-    controls: nativeControls ? '1' : '0',
+    controls: '0',
     loop: '1',
     playlist: VIDEO_ID,
     rel: '0',
     // Belt and braces for the loop window enforced below.
     start: String(Math.floor(FILM_START)),
     end: String(FILM_END),
-    disablekb: nativeControls ? '0' : '1',
+    disablekb: '1',
     fs: '0',
     iv_load_policy: '3',
     modestbranding: '1',
@@ -51,7 +51,9 @@ function embedUrl(nativeControls = false) {
 }
 
 /**
- * Attempt muted autoplay unless the visitor has requested reduced motion.
+ * Should the film start by itself on this visit? On every screen size —
+ * phones included — unless the visitor has asked for less motion or less
+ * data, or is on a connection too slow to stream it.
  */
 function canAutoplay(reducedMotion) {
   // Always try, on every connection. Only a visitor who has asked their
@@ -76,8 +78,8 @@ function canAutoplay(reducedMotion) {
  * saver, the Instagram and Facebook in-app browsers — a button on *our* page
  * cannot start it either: the tap happens outside YouTube's frame, and the
  * browser only lets a tap inside the frame start playback. So in that case the
- * a fully visible native player is offered instead. Its own Play control
- * receives the gesture; once playing, the same iframe fills the background.
+ * player itself is shown and made tappable, with a hint, and the first tap on
+ * it starts the film.
  *
  * Shares one play/pause control between the mobile overlay and the hero's
  * desktop layout through `children({ controls })`.
@@ -92,7 +94,6 @@ export default function HeroCake({ children }) {
   const [wanted, setWanted] = useState(false)
   const [showing, setShowing] = useState(false)
   const [needsTap, setNeedsTap] = useState(false)
-  const [nativeControls, setNativeControls] = useState(false)
 
   const talking = useRef(false) // the player has answered us at least once
   const everPlayed = useRef(false)
@@ -100,9 +101,8 @@ export default function HeroCake({ children }) {
   const rewinding = useRef(false)
   const userPaused = useRef(false)
   const timers = useRef([])
-  const nativeControlsRef = useRef(false)
 
-  const src = useMemo(() => (mounted ? embedUrl(nativeControls) : ''), [mounted, nativeControls])
+  const src = useMemo(() => (mounted ? embedUrl() : ''), [mounted])
 
   // Read inside the message handler without re-subscribing it.
   const needsTapRef = useRef(false)
@@ -114,12 +114,7 @@ export default function HeroCake({ children }) {
     timers.current.push(window.setTimeout(fn, ms))
   }
 
-  const clearTimers = useCallback(() => {
-    timers.current.forEach((id) => window.clearTimeout(id))
-    timers.current = []
-  }, [])
-
-  useEffect(() => clearTimers, [clearTimers])
+  useEffect(() => () => timers.current.forEach((id) => window.clearTimeout(id)), [])
 
   const send = useCallback((payload) => {
     frameRef.current?.contentWindow?.postMessage(
@@ -138,21 +133,10 @@ export default function HeroCake({ children }) {
 
   const askForTap = useCallback(() => {
     if (userPaused.current) return
-    // A site button cannot transfer an iPhone gesture into a cross-origin
-    // player. Switch once to visible native controls and stop scripted retries.
-    clearTimers()
-    if (!nativeControlsRef.current) {
-      nativeControlsRef.current = true
-      talking.current = false
-      lastState.current = null
-      rewinding.current = false
-      setNativeControls(true)
-    }
-    needsTapRef.current = true
     setNeedsTap(true)
     setShowing(true)
     setWanted(false)
-  }, [clearTimers])
+  }, [])
 
   /* ------------------------------------------------------ autoplay */
   useEffect(() => {
@@ -194,7 +178,7 @@ export default function HeroCake({ children }) {
         for (const event of ['onStateChange', 'onAutoplayBlocked']) {
           send({ event: 'command', func: 'addEventListener', args: [event] })
         }
-        if (!nativeControlsRef.current) startPlayback()
+        startPlayback()
         return
       }
       if (data?.event === 'onAutoplayBlocked') {
@@ -268,9 +252,6 @@ export default function HeroCake({ children }) {
       later(ask, 400)
     }
     ask()
-
-    // In blocked mode, wait for a real tap on YouTube's native Play control.
-    if (nativeControlsRef.current) return
 
     // Retry a player that returns to UNSTARTED/CUED after loading. Stop once
     // playback begins or the visitor pauses; buffering gets time to finish.
@@ -347,7 +328,7 @@ export default function HeroCake({ children }) {
   )
 
   // A shared control keeps the same appearance and touch target at every size.
-  const controls = needsTap ? null : (
+  const controls = (
     <div className="pointer-events-none inline-flex items-center gap-2.5">
       <button
         type="button"
@@ -362,6 +343,11 @@ export default function HeroCake({ children }) {
         </span>
         <span className="film-control__label">{wanted ? 'Pause' : 'Play'}</span>
       </button>
+      {needsTap && (
+        <span className={`max-w-28 text-[0.65rem] leading-snug ${isBright ? 'text-[#52331f]' : 'text-white/90'}`}>
+          Tap the film to play
+        </span>
+      )}
     </div>
   )
 
@@ -379,30 +365,24 @@ export default function HeroCake({ children }) {
           decoding="async"
           className="hero-still absolute inset-0 h-full w-full object-cover object-[55%_35%]"
         />
-      </div>
 
-      <div ref={layerRef} className={`hero-film-layer ${needsTap ? 'needs-input' : ''}`}>
-        {mounted && (
-          <iframe
-            key={nativeControls ? 'native-player' : 'background-player'}
-            ref={frameRef}
-            title={needsTap ? 'Play the bakery film' : 'Background film: baking inspiration from YouTube'}
-            src={src}
-            // Out of the tab order while it is decoration; reachable when it
-            // is the only way to start the film.
-            tabIndex={needsTap ? 0 : -1}
-            aria-hidden={needsTap ? undefined : 'true'}
-            allow="autoplay; encrypted-media"
-            referrerPolicy="strict-origin-when-cross-origin"
-            onLoad={onFrameLoad}
-            className={`hero-film-frame ${showing ? 'is-showing' : ''} ${needsTap ? 'is-tappable' : ''}`}
-          />
-        )}
-        {needsTap && (
-          <p className={`hero-film-prompt ${isBright ? 'text-[#52331f]' : 'text-white/90'}`}>
-            Tap Play in the video to start
-          </p>
-        )}
+        <div ref={layerRef} className="hero-film-layer">
+          {mounted && (
+            <iframe
+              ref={frameRef}
+              title="Background film: baking inspiration from YouTube"
+              src={src}
+              // Out of the tab order while it is decoration; reachable when it
+              // is the only way to start the film.
+              tabIndex={needsTap ? 0 : -1}
+              aria-hidden={needsTap ? undefined : 'true'}
+              allow="autoplay; encrypted-media"
+              referrerPolicy="strict-origin-when-cross-origin"
+              onLoad={onFrameLoad}
+              className={`hero-film-frame ${showing ? 'is-showing' : ''} ${needsTap ? 'is-tappable' : ''}`}
+            />
+          )}
+        </div>
       </div>
 
       <div className="pointer-events-none absolute right-4 top-24 z-20 md:hidden">

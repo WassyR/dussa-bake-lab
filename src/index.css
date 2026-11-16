@@ -397,8 +397,6 @@ input[type='time']::-webkit-calendar-picker-indicator {
 .hero-film-layer {
   position: absolute;
   inset: 0;
-  z-index: 0;
-  pointer-events: none;
   overflow: hidden;
   container-type: size;
 }
@@ -524,57 +522,6 @@ input[type='time']::-webkit-calendar-picker-indicator {
     bottom: 34%;
     -webkit-mask-image: linear-gradient(to bottom, #000 58%, transparent 100%);
     mask-image: linear-gradient(to bottom, #000 58%, transparent 100%);
-  }
-}
-
-/* Give a blocked browser a visible native player, with its Play button
-   inside the frame. Keep this same iframe alive when it becomes a background. */
-.hero-film-layer.needs-input {
-  z-index: 20;
-  inset: 6rem 0 auto;
-  width: min(calc(100% - 2rem), 560px);
-  height: auto;
-  min-height: 200px;
-  aspect-ratio: 16 / 9;
-  margin-inline: auto;
-  overflow: visible;
-  container-type: normal;
-  -webkit-mask-image: none;
-  mask-image: none;
-}
-
-.hero-film-layer.needs-input .hero-film-frame {
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  transform: none;
-  border: 1px solid rgb(185 138 94 / 0.4);
-  border-radius: 16px;
-  box-shadow: 0 12px 40px rgb(42 24 16 / 0.2);
-  opacity: 1;
-  transition: none;
-}
-
-.hero-film-prompt {
-  position: absolute;
-  inset: calc(100% + 10px) 0 auto;
-  margin: 0;
-  text-align: center;
-  font: 500 12px / 1.5 var(--font-sans);
-}
-
-@media (max-width: 1279px) {
-  .hero-copy--manual {
-    padding-top: max(min(48svh, 440px), calc(8.5rem + clamp(200px, 56.25vw - 18px, 315px)));
-  }
-}
-
-@media (min-width: 1280px) {
-  .hero-film-layer.needs-input {
-    inset: 50% max(2rem, calc((100vw - 1232px) / 2)) auto auto;
-    width: min(34vw, 520px);
-    margin: 0;
-    transform: translateY(-50%);
   }
 }
 
