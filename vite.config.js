@@ -18,7 +18,7 @@ function previewRouting() {
         if (file.startsWith(`${directory}/`) && existsSync(file)) return next()
         const product = path.match(/^\/creations\/([^/]+)$/)
         if (product) req.url = `/api/page?slug=${encodeURIComponent(product[1])}`
-        else if (/^\/(order\/confirmed|track)\/[^/]+$/.test(path)) req.url = '/app.html'
+        else if (/^\/(order\/confirmed|track)\/[^/]+$/.test(path)) req.url = '/app'
         else {
           res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8' })
           createReadStream(resolve(directory, '404.html')).pipe(res)

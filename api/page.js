@@ -27,7 +27,8 @@ export default async function handler(req, res) {
       status = product ? 200 : 503
     }
   }
-  const seo = getPageSeo(`/creations/${slug}`, { product, brand: snapshot.settings.brand, contact: snapshot.settings.contact })
+  const seo = getPageSeo(`/creations/${slug}`, { product, brand: snapshot.settings.brand, contact: snapshot.settings.contact,
+    ...(status === 503 ? { title: 'Menu temporarily unavailable | Dussa BakeLab', description: 'Please try again shortly or contact Dussa BakeLab in Kigali about your order.' } : {}) })
   const e = escapeHtml
   const body = product ? `<main class="container-x bg-cream py-32">
     <nav aria-label="Breadcrumb"><a href="/">Dussa BakeLab</a> · <a href="/creations">Menu</a></nav>

@@ -10,11 +10,11 @@
     },
     {
       "source": "/order/confirmed/:code",
-      "destination": "/app.html"
+      "destination": "/app"
     },
     {
       "source": "/track/:code",
-      "destination": "/app.html"
+      "destination": "/app"
     }
   ],
   "headers": [
