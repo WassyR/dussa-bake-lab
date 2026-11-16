@@ -123,7 +123,7 @@ for (const [label, viewport, stallOnce] of [
   await page.goto('http://127.0.0.1:5173/', { waitUntil: 'domcontentloaded' })
   await page.getByRole('button', { name: 'Play the background film' }).waitFor()
   check('reduced motion: no video loads before it is requested', await page.locator('iframe').count() === 0)
-  await page.getByRole('button', { name: 'Play the background film' }).click()
+  await page.getByRole('button', { name: 'Play the background film' }).press('Space')
   await page.waitForSelector('iframe.is-showing:not(.is-tappable)', { timeout: 6000 })
   check('reduced motion: a phone visitor can choose to play', await page.locator('iframe.is-showing').count() === 1)
   await page.close()
@@ -246,11 +246,26 @@ for (const [label, viewport] of [
     JSON.stringify(g),
   )
 
-  check(
-    'phone: there is no film button to press',
-    (await page.getByRole('button', { name: /background film/ }).count()) === 0 &&
-      (await page.getByText('Tap the film to play').filter({ visible: true }).count()) === 0,
+  const pause = page.getByRole('button', { name: 'Pause the background film' })
+  const control = await pause.boundingBox()
+  check('phone: the compact control keeps a comfortable touch target',
+    await pause.isVisible() && control.height >= 44 && control.width <= 100,
+    JSON.stringify(control),
   )
+  await pause.click()
+  await page.waitForFunction(() =>
+    Number(getComputedStyle(document.querySelector('iframe.hero-film-frame')).opacity) < 0.05,
+    null, { timeout: 6000 },
+  )
+  check('phone: pause switches to play and stops the film',
+    await page.getByRole('button', { name: 'Play the background film' }).isVisible(),
+  )
+  await page.getByRole('button', { name: 'Play the background film' }).click()
+  await page.waitForFunction(() =>
+    Number(getComputedStyle(document.querySelector('iframe.hero-film-frame')).opacity) > 0.95,
+    null, { timeout: 6000 },
+  )
+  check('phone: play resumes the film and restores the pause button', await pause.isVisible())
   const cta = await page.getByRole('link', { name: /Order your cake/ }).boundingBox()
   check(
     'phone: Order your cake is on screen on arrival',

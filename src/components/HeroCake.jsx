@@ -81,8 +81,8 @@ function canAutoplay(reducedMotion) {
  * player itself is shown and made tappable, with a hint, and the first tap on
  * it starts the film.
  *
- * Renders its controls through `children({ controls, compact })`, so the hero
- * can place them in its own layout.
+ * Shares one play/pause control between the mobile overlay and the hero's
+ * desktop layout through `children({ controls })`.
  */
 export default function HeroCake({ children }) {
   const reducedMotion = useReducedMotion()
@@ -322,47 +322,33 @@ export default function HeroCake({ children }) {
 
   const label = wanted ? 'Pause the background film' : 'Play the background film'
   const icon = wanted ? (
-    <Pause size={12} strokeWidth={2.2} aria-hidden="true" />
+    <Pause size={11} fill="currentColor" strokeWidth={1.4} aria-hidden="true" />
   ) : (
-    <Play size={12} strokeWidth={2.2} className="translate-x-px" aria-hidden="true" />
+    <Play size={11} fill="currentColor" strokeWidth={1.4} className="translate-x-px" aria-hidden="true" />
   )
 
-  /* Full control, for the hero's baseline row on larger screens. */
-  const controls = needsTap ? (
-    <p className={`text-[0.7rem] uppercase tracking-[0.18em] ${isBright ? 'text-[#52331f]' : 'text-white/70'}`}>Tap the film to play</p>
-  ) : (
-    <div className={`flex items-center gap-4 text-[0.7rem] uppercase tracking-[0.18em] ${isBright ? 'text-[#52331f]' : 'text-white/70'}`}>
+  // A shared control keeps the same appearance and touch target at every size.
+  const controls = (
+    <div className="pointer-events-none inline-flex items-center gap-2.5">
       <button
         type="button"
         onClick={toggle}
         aria-pressed={wanted}
         aria-label={label}
-        className={`group inline-flex items-center gap-2.5 transition-colors focus-visible:rounded-full focus-visible:outline-2 focus-visible:outline-offset-4 ${isBright ? 'hover:text-[#9a5e29] focus-visible:outline-[#52331f]' : 'hover:text-white focus-visible:outline-white'}`}
+        title={wanted ? 'Pause background video' : 'Play background video'}
+        className={`film-control ${isBright ? 'film-control--light' : ''}`}
       >
-        <span className={`flex h-8 w-8 items-center justify-center rounded-full border transition-colors ${isBright ? 'border-[#52331f]/40 group-hover:border-[#52331f]/80' : 'border-white/35 group-hover:border-white/70'}`}>
+        <span className="film-control__icon">
           {icon}
         </span>
-        {wanted ? 'Pause film' : 'Play film'}
+        <span className="film-control__label">{wanted ? 'Pause' : 'Play'}</span>
       </button>
+      {needsTap && (
+        <span className={`max-w-28 text-[0.65rem] leading-snug ${isBright ? 'text-[#52331f]' : 'text-white/90'}`}>
+          Tap the film to play
+        </span>
+      )}
     </div>
-  )
-
-  /* A single round button for the corner of the film on a phone. */
-  const compact = needsTap ? (
-    <span className="pointer-events-none inline-flex items-center gap-2 rounded-full bg-black/40 px-3.5 py-2 text-[0.68rem] uppercase tracking-[0.16em] text-white/90 backdrop-blur-md">
-      <Play size={11} strokeWidth={2.4} aria-hidden="true" />
-      Tap the film to play
-    </span>
-  ) : (
-    <button
-      type="button"
-      onClick={toggle}
-      aria-pressed={wanted}
-      aria-label={label}
-      className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-black/25 text-white backdrop-blur-md transition-colors active:bg-black/45 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-    >
-      {icon}
-    </button>
   )
 
   return (
@@ -399,13 +385,11 @@ export default function HeroCake({ children }) {
         </div>
       </div>
 
-      {(!mounted || needsTap) && (
-        <div className="pointer-events-none absolute right-4 top-24 z-20 md:hidden">
-          {compact}
-        </div>
-      )}
+      <div className="pointer-events-none absolute right-4 top-24 z-20 md:hidden">
+        {controls}
+      </div>
 
-      {typeof children === 'function' ? children({ controls, compact, needsTap }) : children}
+      {typeof children === 'function' ? children({ controls, needsTap }) : children}
     </>
   )
 }
