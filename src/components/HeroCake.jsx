@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useReducedMotion } from 'framer-motion'
-import { ArrowUpRight, Pause, Play } from 'lucide-react'
+import { Pause, Play } from 'lucide-react'
 import { HERO_PHOTO } from '../data/photography'
 import { useTheme } from '../context/ThemeContext'
 
 // Official privacy-enhanced embed. This is inspiration footage from YouTube,
 // not video recorded in Dussa BakeLab's kitchen.
 const VIDEO_ID = 'HTXB6flODww'
-const VIDEO_URL = `https://www.youtube.com/watch?v=${VIDEO_ID}`
 const PLAYER_ORIGIN = 'https://www.youtube-nocookie.com'
 
 /* YouTube player states, as reported over postMessage. */
@@ -322,15 +321,6 @@ export default function HeroCake({ children }) {
         </span>
         {wanted ? 'Pause film' : 'Play film'}
       </button>
-      <a
-        href={VIDEO_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={`inline-flex items-center gap-1 transition-colors ${isBright ? 'text-[#52331f]/80 hover:text-[#52331f]' : 'text-white/60 hover:text-white'}`}
-      >
-        Film via YouTube
-        <ArrowUpRight size={12} aria-hidden="true" />
-      </a>
     </div>
   )
 
