@@ -24,6 +24,7 @@ export const ART_VARIANT_IDS = ART_VARIANTS.map((v) => v.id)
 export const ART_PALETTES = [
   { id: 'chocolate', label: 'Chocolate' },
   { id: 'vanilla', label: 'Vanilla' },
+  { id: 'marble', label: 'Marble' },
   { id: 'redVelvet', label: 'Red velvet' },
   { id: 'strawberry', label: 'Strawberry' },
   { id: 'caramel', label: 'Caramel' },

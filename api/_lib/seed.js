@@ -1,9 +1,10 @@
-import { PRODUCTS, MENU_VERSION, RETIRED_SAMPLE_SLUGS } from '../../src/data/catalog.js'
+import { PRODUCTS, MENU_VERSION, MENU_CONTENT_VERSION, RETIRED_SAMPLE_SLUGS, applyMenuContentUpdate } from '../../src/data/catalog.js'
 import { BRAND, CONTACT, FULFILMENT, HOURS } from '../../src/data/site.js'
 import { getProduct, getSetting, saveProduct, saveSetting } from './db.js'
 
 export const SETTINGS_KEY = 'business'
 export const MENU_VERSION_KEY = 'menu-version'
+export const MENU_CONTENT_VERSION_KEY = 'menu-content-version'
 
 /** The shape the site and the admin settings form both read. */
 export function defaultSettings() {
@@ -54,6 +55,17 @@ export async function seedIfEmpty() {
       }
     }
     await saveSetting(MENU_VERSION_KEY, MENU_VERSION)
+  }
+
+  if ((await getSetting(MENU_CONTENT_VERSION_KEY)) !== MENU_CONTENT_VERSION) {
+    const loaflets = await getProduct('cake-loaflets')
+    if (loaflets) {
+      // The owner entered flavours as sizes, including a zero-priced Marble
+      // row. Move these to flavour choices at the confirmed per-piece price.
+      // Preserve uploaded photos, visibility and the rest of the live record.
+      await saveProduct(applyMenuContentUpdate(loaflets))
+    }
+    await saveSetting(MENU_CONTENT_VERSION_KEY, MENU_CONTENT_VERSION)
   }
 
   if (!(await getSetting(SETTINGS_KEY))) {

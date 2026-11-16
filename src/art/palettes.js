@@ -23,6 +23,15 @@ export const PALETTES = {
     glow: '#FAE7CC',
     plate: '#F0E2D0',
   },
+  marble: {
+    sponge: ['#F6E3C4', '#6B4127'],
+    icing: ['#FFF6E9', '#5C3520'],
+    accent: '#6B4127',
+    crumb: '#C79E6E',
+    filling: '#E6C79C',
+    glow: '#FAE7CC',
+    plate: '#F0E2D0',
+  },
   redVelvet: {
     sponge: ['#A6362F', '#7A2220'],
     icing: ['#FFF8F0', '#EFD9C6'],

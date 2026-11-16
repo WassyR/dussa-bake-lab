@@ -1,13 +1,13 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { PRODUCTS, MENU_VERSION, RETIRED_SAMPLE_SLUGS, fromPrice, computeLinePrice, isQuoteProduct } from '../src/data/catalog.js'
+import { PRODUCTS, MENU_VERSION, MENU_CONTENT_VERSION, RETIRED_SAMPLE_SLUGS, fromPrice, computeLinePrice, isQuoteProduct } from '../src/data/catalog.js'
 import { getPageSeo } from '../src/lib/seo.js'
 import { sanitiseProduct } from '../api/_lib/product.js'
 
 // These tests must never connect to a live merchant database.
 for (const key of ['DATABASE_URL', 'POSTGRES_URL', 'NEON_DATABASE_URL']) delete process.env[key]
-const { saveProduct, getProduct, listProducts, deleteProduct, getSetting } = await import('../api/_lib/db.js')
-const { seedIfEmpty, MENU_VERSION_KEY } = await import('../api/_lib/seed.js')
+const { saveProduct, getProduct, listProducts, deleteProduct, getSetting, saveSetting } = await import('../api/_lib/db.js')
+const { seedIfEmpty, MENU_VERSION_KEY, MENU_CONTENT_VERSION_KEY } = await import('../api/_lib/seed.js')
 const { default: catalogue } = await import('../api/catalog.js')
 
 const product = slug => PRODUCTS.find(p => p.slug === slug)
@@ -16,7 +16,7 @@ test('the catalogue contains exactly the six owner-confirmed offerings', () => {
   assert.deepEqual(PRODUCTS.map(p => p.slug), ['cookies', 'classic-cupcakes', 'decorated-cupcakes', 'cake-loaflets', 'birthday-cake', 'wedding-cake'])
   for (const p of PRODUCTS) {
     assert(!RETIRED_SAMPLE_SLUGS.includes(p.slug))
-    assert.deepEqual(p.flavors, [])
+    if (p.slug !== 'cake-loaflets') assert.deepEqual(p.flavors, [])
     assert.deepEqual(p.frostings, [])
     assert.deepEqual(p.addons, [])
   }
@@ -33,6 +33,9 @@ test('cupcakes and loaflets charge per piece with no invented box discounts', ()
   for (const [slug, price] of [['classic-cupcakes', 500], ['decorated-cupcakes', 1500], ['cake-loaflets', 2500]]) {
     assert.equal(fromPrice(product(slug)), price)
     assert.equal(computeLinePrice({ product: product(slug), quantity: 6 }), price * 6)
+  }
+  for (const flavorId of ['vanilla', 'marble']) {
+    assert.equal(computeLinePrice({ product: product('cake-loaflets'), flavorId, quantity: 2 }), 5000)
   }
 })
 
@@ -88,5 +91,27 @@ test('the public API identifies the menu version and hides archived sample produ
   const res = { setHeader() {}, status(code) { assert.equal(code, 200); return this }, send(text) { body = JSON.parse(text); return this } }
   await catalogue({ method: 'GET', headers: {} }, res)
   assert.equal(body.menuVersion, MENU_VERSION)
+  assert.equal(body.menuContentVersion, MENU_CONTENT_VERSION)
   assert(!body.products.some(p => RETIRED_SAMPLE_SLUGS.includes(p.slug)))
+})
+
+test('the loaflet update moves flavours out of size rows once and preserves bakery uploads and later edits', async () => {
+  const defaults = product('cake-loaflets')
+  await saveProduct({ ...defaults, photo: '/api/images/owner-loaflet', active: false, leadDays: 4, flavors: [],
+    sizes: [{ id: 'single', label: '1 piece', serves: 'Vanilla', price: 2500 }, { id: '1-piece', label: '1 Piece', serves: 'Marble', price: 0 }],
+  })
+  await saveSetting(MENU_CONTENT_VERSION_KEY, 'before-loaflet-flavours')
+  await seedIfEmpty()
+  const updated = await getProduct(defaults.slug)
+  assert.deepEqual(updated.sizes, [{ id: 'single', label: '1 piece', serves: '1 loaflet', price: 2500 }])
+  assert.deepEqual(updated.flavors.map(f => f.id), ['vanilla', 'marble'])
+  assert.equal(updated.photo, '/api/images/owner-loaflet')
+  assert.equal(updated.active, false)
+  assert.equal(updated.leadDays, 4)
+  assert.equal(await getSetting(MENU_CONTENT_VERSION_KEY), MENU_CONTENT_VERSION)
+  const edited = { ...updated, description: 'The owner’s later description.' }
+  await saveProduct(edited)
+  await seedIfEmpty()
+  assert.equal((await getProduct(defaults.slug)).description, edited.description)
+  await saveProduct(defaults)
 })

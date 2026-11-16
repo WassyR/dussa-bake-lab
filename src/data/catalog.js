@@ -1,5 +1,6 @@
 /** Owner-confirmed menu and RWF prices supplied on 16 November 2026. */
 export const MENU_VERSION = 'dussa-owner-menu-2026-11-16'
+export const MENU_CONTENT_VERSION = 'dussa-loaflets-vanilla-marble-v1'
 
 /** Retire the original sample catalogue without deleting its stored records. */
 export const RETIRED_SAMPLE_SLUGS = [
@@ -22,7 +23,7 @@ export const CATEGORIES = [
     description: 'One cookie for RWF 300, or a pack of four for RWF 1,000.',
     art: 'cookieStack', flavorArt: 'caramel' },
   { id: 'treats', name: 'Cake loaflets', blurb: 'your own little cake',
-    description: 'Individual cake loaflets at RWF 2,500 each. Choose how many you would like.',
+    description: 'Soft little loaf cakes in vanilla or marble, lovely with tea or coffee. RWF 2,500 each.',
     art: 'cakeSlice', flavorArt: 'vanilla' },
   { id: 'custom', name: 'Wedding cakes', blurb: 'made for your day',
     description: 'Custom wedding cakes planned around your celebration. Contact us to discuss the design and price.',
@@ -64,12 +65,16 @@ export const PRODUCTS = [
   },
   {
     ...NO_EXTRAS, slug: 'cake-loaflets', name: 'Cake Loaflets', category: 'treats',
-    tagline: 'A little cake of your own',
-    description: 'Individual cake loaflets at RWF 2,500 each. Order one or choose a quantity to share.',
+    tagline: 'Little loaves, full of flavour',
+    description: 'Soft little cakes baked in a loaf shape, lovely with tea or coffee. Choose classic vanilla or marble, with vanilla and chocolate swirled through every slice. Enjoy one yourself or share a few with someone you love.',
     art: 'cakeSlice', flavorArt: 'vanilla', bestseller: true, leadDays: 2,
-    tags: ['Individual cakes', 'Per piece'],
+    tags: ['Mini loaf cakes', 'Vanilla & marble', 'Per piece'],
     occasions: ['thanks', 'justbecause', 'corporate', 'birthday'],
     sizes: [{ id: 'single', label: '1 piece', serves: '1 loaflet', price: 2500 }],
+    flavors: [
+      { id: 'vanilla', label: 'Vanilla', delta: 0 },
+      { id: 'marble', label: 'Marble', delta: 0 },
+    ],
   },
   {
     ...NO_EXTRAS, slug: 'birthday-cake', name: 'Birthday Cake', category: 'cakes',
@@ -104,6 +109,14 @@ export const OCCASIONS = [
 ]
 
 export const isQuoteProduct = product => product?.pricing === 'quote'
+
+/** Apply this confirmed content change while retaining the bakery’s live data. */
+export function applyMenuContentUpdate(product) {
+  if (product.slug !== 'cake-loaflets') return product
+  const { tagline, description, flavors, sizes } = PRODUCTS.find(p => p.slug === 'cake-loaflets')
+  return { ...product, tagline, description, flavors, sizes }
+}
+
 export const getProduct = slug => PRODUCTS.find(p => p.slug === slug)
 export const getCategory = id => CATEGORIES.find(c => c.id === id)
 export const productsByCategory = id => id === 'all' ? PRODUCTS : PRODUCTS.filter(p => p.category === id)
