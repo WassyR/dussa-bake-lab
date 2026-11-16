@@ -1,4 +1,5 @@
 import { chromium } from 'playwright'
+import { DEFAULT_CATALOG } from '../src/data/siteCatalog.js'
 
 /**
  * Browser walk-through of the kitchen dashboard, run against the dev server
@@ -262,6 +263,44 @@ await check('saving a custom cake preserves the quote flow on the storefront', a
   await page.getByRole('link', { name: 'Request quote on WhatsApp' }).isVisible() &&
   await page.getByRole('button', { name: /Add to basket/ }).count() === 0,
 )
+
+// 12 — a broken database must remain diagnosable when fetching orders fails.
+const failurePage = await browser.newPage({ viewport: { width: 1440, height: 950 } })
+failurePage.on('pageerror', e => errors.push(String(e)))
+let connectionRecovered = false
+let rejectKey = false
+await failurePage.route('**/api/orders', route => route.fulfill({
+  status: rejectKey ? 401 : connectionRecovered ? 200 : 500,
+  json: rejectKey ? { error: 'Invalid admin key' } : connectionRecovered ? { orders: [] } : { error: 'Database unavailable' },
+}))
+await failurePage.route('**/api/catalog', route => route.fulfill({ json: { ...DEFAULT_CATALOG, storage: 'postgres', secured: true } }))
+await failurePage.route('**/api/health', route => route.fulfill({ json: { checks: [
+  { id: 'database', label: 'Database', ok: connectionRecovered, detail: connectionRecovered ? 'Connected. 0 orders, 6 products stored.' : 'The database name is incorrect. Copy the Postgres connection URL from Neon.' },
+  { id: 'admin', label: 'Dashboard key', ok: true, detail: 'ADMIN_KEY is set.' },
+] } }))
+await failurePage.goto(`${BASE}/admin`, { waitUntil: 'networkidle' })
+await failurePage.getByLabel('Admin key').fill('local-test')
+await failurePage.getByRole('button', { name: 'Open dashboard' }).click()
+await failurePage.getByRole('button', { name: /^Setup/ }).click()
+await check('Setup explains the database failure even when the orders request fails', async () =>
+  await failurePage.getByText(/The database name is incorrect/).isVisible() &&
+  await failurePage.getByText('Connected.', { exact: true }).count() === 0,
+)
+connectionRecovered = true
+await failurePage.getByRole('button', { name: 'Refresh', exact: true }).click()
+await check('refreshing after a database repair updates the connection status', async () => {
+  await failurePage.getByText('Connected. 0 orders, 6 products stored.').waitFor()
+  return await failurePage.getByText('Connected. 0 orders, 6 products stored.').isVisible()
+})
+await failurePage.getByRole('button', { name: 'Sign out', exact: true }).click()
+rejectKey = true
+await failurePage.getByLabel('Admin key').fill('wrong-key')
+await failurePage.getByRole('button', { name: 'Open dashboard' }).click()
+await check('successful health checks never bypass a rejected dashboard password', async () => {
+  await failurePage.getByText('That admin key was not recognised. Please try again.').waitFor()
+  return await failurePage.getByLabel('Admin key').isVisible()
+})
+await failurePage.close()
 
 failures += errors.length
 console.log(errors.length ? `\nPAGE ERRORS:\n${[...new Set(errors)].join('\n')}` : '\nno page errors')

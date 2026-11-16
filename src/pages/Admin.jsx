@@ -80,38 +80,33 @@ export default function Admin() {
     if (!silent) setLoading(true)
     setError('')
     try {
-      const orderData = await fetchOrders(key)
-      setOrders(Array.isArray(orderData) ? orderData : orderData.orders || [])
-      setAuthed(true)
-      setLastSync(new Date())
-
-      // The catalogue and health checks are secondary; a failure there must not
-      // knock the operator out of the orders view.
-      try {
-        const catalog = await fetchAdminCatalog(key)
-        setProducts(catalog.products || [])
-        setSettings(catalog.settings || null)
-        setStorage(catalog.storage || '')
-        setSecured(catalog.secured !== false)
-      } catch {
-        /* keep whatever is already loaded */
-      }
-      try {
-        setHealth(await fetchHealth())
-      } catch {
-        setHealth(null)
-      }
-    } catch (err) {
-      if (/401|admin key/i.test(err.message)) {
+      // Setup must still load when the order query fails; it explains why the
+      // database is unavailable instead of assuming a configured URL works.
+      const [orderResult, catalogResult, healthResult] = await Promise.allSettled([
+        fetchOrders(key), fetchAdminCatalog(key), fetchHealth(),
+      ])
+      if (orderResult.status === 'rejected' && /401|admin key/i.test(orderResult.reason.message)) {
         setAuthed(false)
         setSignInError('That admin key was not recognised. Please try again.')
+        return
+      }
+      setAuthed(true)
+      if (orderResult.status === 'fulfilled') {
+        setOrders(orderResult.value)
+        setLastSync(new Date())
       } else {
-        // Offline: show what this browser saved so the kitchen is not blind.
-        setAuthed(true)
         setStorage('offline')
         setOrders(localOrders())
-        setLastSync(new Date())
+        setError('Saved orders could not be loaded. Showing orders saved on this device. Open Setup to check the database.')
       }
+      if (catalogResult.status === 'fulfilled') {
+        const catalog = catalogResult.value
+        setProducts(catalog.products || [])
+        setSettings(catalog.settings || null)
+        if (orderResult.status === 'fulfilled') setStorage(catalog.storage || '')
+        setSecured(catalog.secured !== false)
+      }
+      setHealth(healthResult.status === 'fulfilled' ? healthResult.value : null)
     } finally {
       setLoading(false)
     }
@@ -338,7 +333,8 @@ export default function Admin() {
 
   /* ------------------------------------------------------- dashboard */
 
-  const showSetupWarning = storage === 'memory' || storage === 'offline' || !secured
+  const databaseCheck = health?.checks?.find(check => check.id === 'database')
+  const showSetupWarning = storage === 'memory' || storage === 'offline' || !secured || databaseCheck?.ok === false
 
   return (
     <section className="min-h-[100svh] bg-cream pb-20 pt-28 md:pt-32">
@@ -404,8 +400,10 @@ export default function Admin() {
               {storage === 'memory'
                 ? 'No database is connected. Orders are stored temporarily and will be lost when the server restarts. Open Setup to connect a database.'
                 : storage === 'offline'
-                  ? 'The order service is unavailable. Showing orders saved in this browser.'
-                  : 'No dashboard password is set. Open Setup to add one.'}
+                  ? 'The order service is unavailable. Showing orders saved in this browser. Open Setup to check the database connection.'
+                  : databaseCheck?.ok === false
+                    ? databaseCheck.detail
+                    : 'No dashboard password is set. Open Setup to add one.'}
             </span>
           </button>
         )}
@@ -498,11 +496,13 @@ function SetupPanel({ health, storage, secured, adminKey }) {
     {
       id: 'database',
       label: 'Database',
-      ok: storage === 'postgres',
+      ok: false,
       detail:
         storage === 'postgres'
-          ? 'Connected.'
-          : 'No database is connected, so orders are held in memory and disappear when the server sleeps.',
+          ? 'A database URL is configured, but its connection could not be verified. Refresh Setup to check again.'
+          : storage === 'offline'
+            ? 'The order service is unavailable. Refresh Setup to check the database connection.'
+            : 'No database is connected, so orders are held in memory and disappear when the server sleeps.',
     },
     {
       id: 'admin',
@@ -549,7 +549,8 @@ function SetupPanel({ health, storage, secured, adminKey }) {
           </Step>
           <Step n="2">
             In your Vercel project, open <Code>Settings → Environment Variables</Code> and add{' '}
-            <Code>DATABASE_URL</Code> with that connection string.
+            <Code>DATABASE_URL</Code> with that connection string. Use the Postgres connection URL,
+            not a Neon API key. Select the Production environment for the live site.
           </Step>
           <Step n="3">
             Add <Code>ADMIN_KEY</Code> too. Any long phrase you will remember. That becomes the

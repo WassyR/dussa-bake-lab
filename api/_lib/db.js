@@ -1,4 +1,5 @@
 import pg from 'pg'
+import { databaseUrlFromEnv, databasePoolConfig, databaseFailureReason } from './database-config.js'
 
 /**
  * Postgres storage for orders, products and settings.
@@ -12,11 +13,7 @@ import pg from 'pg'
  * every endpoint reports which mode it is in so the dashboard can warn you.
  */
 
-const CONNECTION =
-  process.env.DATABASE_URL ||
-  process.env.POSTGRES_URL ||
-  process.env.NEON_DATABASE_URL ||
-  ''
+const CONNECTION = databaseUrlFromEnv()
 
 export const hasDatabase = Boolean(CONNECTION)
 
@@ -32,13 +29,10 @@ export const hasDatabase = Boolean(CONNECTION)
 function pool() {
   if (!globalThis.__dussaPool) {
     globalThis.__dussaPool = new pg.Pool({
-      connectionString: CONNECTION,
+      ...databasePoolConfig(CONNECTION),
       max: 1,
       idleTimeoutMillis: 10000,
       connectionTimeoutMillis: 12000,
-      // Hosted Postgres (Neon, Supabase, Railway) terminates TLS with a
-      // certificate chain the Lambda runtime does not carry.
-      ssl: CONNECTION.includes('localhost') ? false : { rejectUnauthorized: false },
     })
   }
   return globalThis.__dussaPool
@@ -355,6 +349,6 @@ export async function healthCheck() {
     await query('SELECT 1')
     return { ok: true, mode: 'postgres' }
   } catch (error) {
-    return { ok: false, mode: 'postgres', reason: error.message }
+    return { ok: false, mode: 'postgres', reason: databaseFailureReason(error) }
   }
 }

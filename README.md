@@ -140,6 +140,20 @@ what these steps use:
 3. Add `ADMIN_KEY` too — any long phrase. That becomes the `/admin` password.
 4. Redeploy.
 
+Use the **Postgres connection URL** from Neon’s **Connect** dialog, rather than a
+Neon API key. Add it to Vercel’s **Production** environment for the public site.
+The value should be one line, for example
+`postgresql://USER:PASSWORD@HOST/neondb?sslmode=require&channel_binding=require`.
+The `?` matters: a space before `sslmode` can make Postgres interpret the SSL
+options as part of the database name. The app tolerates that specific paste
+mistake, surrounding quotes and trailing whitespace, while keeping TLS certificate
+verification enabled. It never executes a copied `psql` command.
+
+Open `/admin` → **Setup** after redeploying. It checks the actual connection,
+including when the order service cannot load. Orders saved only on a customer’s
+device during an outage do not appear in the shared database automatically;
+use the order’s WhatsApp hand-off to confirm those requests with the bakery.
+
 On the first request the tables are created and the menu in this repo is copied
 into the database, so the dashboard opens with your products ready to edit.
 Nothing else to run — no migrations, no SQL.
